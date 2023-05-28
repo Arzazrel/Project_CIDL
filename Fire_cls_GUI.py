@@ -39,24 +39,29 @@ window_width = 800                              # is the width of the tkinter wi
 window_height = 700                             # is the height of the tkinter window
 # explain frame
 ex_f_padx = 10                                  # horizontal pad for the explain frame
-ex_f_pady = 10                                  # vertical pad for the explain frame
-ex_frame_width = window_width - 2*ex_f_padx      # width of the explain frame
-ex_frame_height = 60                           # height of the explain frame
+ex_f_pady = 5                                   # vertical pad for the explain frame
+ex_frame_width = window_width - 2*ex_f_padx     # width of the explain frame
+ex_frame_height = 45                            # height of the explain frame
 # top frame
 t_f_padx = 10                                   # horizontal pad for the top frame
-t_f_pady = 10                                   # vertical pad for the top frame
+t_f_pady = 5                                    # vertical pad for the top frame
 top_frame_width = window_width - 2*t_f_padx     # width of the top frame
-top_frame_height = 200                          # height of the top frame
+top_frame_height = 140                          # height of the top frame
 # image frame
 im_f_padx = 10                                  # horizontal pad for the image frame
-im_f_pady = 10                                  # vertical pad for the image frame
+im_f_pady = 5                                   # vertical pad for the image frame
 im_frame_width = window_width - 2*im_f_padx     # width of the image frame
 im_frame_height = 250                           # height of the image frame
+# bottom frame
+b_f_padx = 10                                   # horizontal pad for the bottom frame
+b_f_pady = 5                                    # vertical pad for the bottom frame
+b_frame_width = window_width - 2*im_f_padx      # width of the bottom frame
+b_frame_height = 140                            # height of the bottom frame
 # error frame
 er_f_padx = 10                                  # horizontal pad for the error frame
-er_f_pady = 10                                  # vertical pad for the error frame
+er_f_pady = 5                                   # vertical pad for the error frame
 er_frame_width = window_width - 2*im_f_padx     # width of the error frame
-er_frame_height = 100                           # height of the error frame
+er_frame_height = 45                            # height of the error frame
 
 # ---- errors variables ----
 error_text = StringVar()                        # text that shows the errors
@@ -64,6 +69,7 @@ error_text.set('')                              # default value: empty text
 er_load_model_text = "Please insert a model name in the field before load CNN model."   # error text that occur when try to load a model without specifying the CNN name model
 er_load_model_unknown_text = "There isn't a CNN model with the specified name."         # error text that occur when it's not possible return the specified model
 er_save_model_text = "Please insert a model name in the field before save CNN model."   # error text that occur when try to save a model without specifying the CNN name model
+er_no_ds_text = "Please load the dataset and retry."                                    # error text that occur when user want to work with dataset without loading one
 
 # ---- status variables ----
 model_trained = False                           # variable that show if there is a model trained
@@ -75,12 +81,19 @@ CNN_menu_text = StringVar()                     # text that shows in the menu th
 CNN_menu_text.set('None')                       # the default value is 'None'
 status_model_text = StringVar()                 # text that shows the state of the CNN model (empty, trained)
 status_model_text.set('CNN model: empty')       # the default value is 'empty'
+
+# ---- label text variables ----
+classify_text = StringVar()                     # text that shows the class of the new object classified by classifier
+classify_text.set(':')                          # default value
+label_image_text = StringVar()                  # text that shows the groundtruth of the visualised image
+label_image_text.set('Label: ')                 # default value
+
 # ---- path variables ----
 path_dir_ds = "Dataset\Train_DS"                # folder in which there are the image ds for training
 path_dir_test_ds = "Dataset\Test_DS"            # folder in which there are the image ds for testing
 path_dir_model = "Model"
 # ---- model variables ----
-network = None #models.Sequential()                  # contain the CNN model, default value is None
+network = None                                  # contain the CNN model, default value is None
 batch_size = 64                                 # batch size for training, this is the default value
 img_height = 240                                # height of the images in input to CNN
 img_width = 240                                 # width of the images in input to CNN
@@ -128,7 +141,7 @@ def current_view_to_visualise():
     explain_frame.grid_propagate(False)
     
     explainTextLabel = Label(explain_frame, text=explainText)               # Label to briefly explain
-    explainTextLabel.grid(row=0, column=0, sticky="W", padx=20, pady=10)
+    explainTextLabel.grid(row=0, column=0, sticky="W", padx=window_width/2, pady=5)
     # ---- end: explain_frame ----
     
     # ---- start: top frame (contain: iport for dataset, import and save for model, select and fit model buttons) ----
@@ -141,7 +154,7 @@ def current_view_to_visualise():
     btn_load_ds.grid(row=0, column=0, sticky="W", padx=10, pady=10)
     
     dataset_label = Label(top_frame, textvariable=status_DS_text)           # label for the status of DS (missing,loading,loaded)
-    dataset_label.grid(row=0, column=1, sticky="W", padx=10, pady=10)    
+    dataset_label.grid(row=0, column=4, sticky="W", padx=10, pady=10)    
     # -- end: row 0 --
     
     # -- start: row 1 --
@@ -159,14 +172,17 @@ def current_view_to_visualise():
     # -- end: row 1 --
     
     # -- start: row 2 --
-    name_model_label = Label(top_frame, text="Select the CNN model that you want:")      # label to explain the choice of CNN models
+    name_model_label = Label(top_frame, text="Select the CNN model that you want:") # label to explain the choice of CNN models
     name_model_label.grid(row=2, column=0, sticky="W", padx=10, pady=10) 
     
-    CNN_menu = OptionMenu(top_frame, CNN_menu_text,*CNN_model_text)                      # creating select menu for CNN model
+    CNN_menu = OptionMenu(top_frame, CNN_menu_text,*CNN_model_text)                 # creating select menu for CNN model
     CNN_menu.grid(row=2, column=1,padx=10)
     
-    btn_fit_model = Button(top_frame, text="Fit CNN model", command=btn_load_ds_method)  # button to fit CNN model
+    btn_fit_model = Button(top_frame, text="Fit CNN model", command=fit_model)      # button to fit CNN model
     btn_fit_model.grid(row=2, column=2, sticky="W", padx=10, pady=10)
+    
+    model_label = Label(top_frame, textvariable=status_model_text)           # label for the status of DS (missing,loading,loaded)
+    model_label.grid(row=2, column=4, sticky="W", padx=10, pady=10)  
     # -- end: row 2 --
     # ---- end: top frame ----
     
@@ -178,15 +194,54 @@ def current_view_to_visualise():
     # image take by test set that will be predicted
     if image_to_visualize is not None:
         image_label = Label(image_frame, image= image_to_visualize)
-        image_label.grid(row=3, column=1, sticky="W", padx=10, pady=10)
+        image_label.grid(row=0, column=1, sticky="W", padx=(window_width/2 - img_width/2), pady=5)
     # ---- end: image frame ----
 
-    # ---- start: ----
-    # ---- end: ----
+    # ---- start: bottom frame (contains: button to perform load an image of the test set and predict) ----
+    bottom_frame = Frame(window, width=b_frame_width , height=b_frame_height , bg='grey')
+    bottom_frame.grid(row=3, column=0, padx=b_f_padx , pady=b_f_pady , sticky="nsew")
+    bottom_frame.grid_propagate(False)
+    
+    # -- start: row 0 --
+    btn_load_random_image = Button(bottom_frame, text="Take image", command=btn_load_image) # buttons to load a random image from test DS to predict 
+    btn_load_random_image.grid(row=0, column=0, sticky="W", padx=10, pady=10)
+    
+    correct_label = Label(bottom_frame, textvariable=label_image_text)                      # label for the groundtruth
+    correct_label.grid(row=0, column=1, sticky="W", padx=10, pady=10)
+    
+    btn_predict = Button(bottom_frame, text="Classify", command=predict)                    # button to predict label of image
+    btn_predict.grid(row=0, column=2)
+    
+    result_classifier_label = Label(bottom_frame, textvariable=classify_text)               # label for the result of classifier
+    result_classifier_label.grid(row=0, column=3, sticky="W", padx=0, pady=5)
+    # -- end: row 0 --
+    
+    # -- start: row 1 --
+    btn_load_test_ds = Button(bottom_frame, text="Load extern test DS", command=btn_load_ds_method)   # button to load the whole dataset
+    btn_load_test_ds.grid(row=1, column=0, sticky="W", padx=10, pady=10)
+    
+    dataset_test_label = Label(bottom_frame, textvariable=status_DS_text)           # label for the status of DS (missing,loading,loaded)
+    dataset_test_label.grid(row=1, column=4, sticky="W", padx=10, pady=10)
+    # -- end: row 1 --
+    
+    # -- start: row 2 --
+    btn_load_random_test_img = Button(bottom_frame, text="Take extern test image", command=btn_load_image) # buttons to load a random image from test DS to predict 
+    btn_load_random_test_img.grid(row=2, column=0, sticky="W", padx=10, pady=10)
+    
+    correct_ext_test_label = Label(bottom_frame, textvariable=label_image_text)                      # label for the groundtruth
+    correct_ext_test_label.grid(row=2, column=1, sticky="W", padx=10, pady=10)
+    
+    btn_predict = Button(bottom_frame, text="Classify", command=predict)                    # button to predict label of image
+    btn_predict.grid(row=2, column=2)
+    
+    result_classifier_label = Label(bottom_frame, textvariable=classify_text)               # label for the result of classifier
+    result_classifier_label.grid(row=2, column=3, sticky="W", padx=0, pady=5)
+    # -- end: row 2 --
+    # ---- end: bottom frame----
     
     # ---- start: error frame (contain the error text if occour an error) ----
     error_frame = Frame(window, width=er_frame_width , height=er_frame_height , bg='grey')
-    error_frame.grid(row=2, column=0, padx=er_f_padx , pady=er_f_pady , sticky="nsew")
+    error_frame.grid(row=4, column=0, padx=er_f_padx , pady=er_f_pady , sticky="nsew")
     error_frame.grid_propagate(False)
     
     error_label = Label(error_frame, textvariable=error_text, bg='grey')
@@ -196,72 +251,8 @@ def current_view_to_visualise():
     
     
     """
-    # create variable for the GUI elements
-    explainText = "Welcome to Pokemon Image Classifier.\n"
-    # create the GUI elements and place them 
-    # main frame
-    main_frame = Frame(window, width=760, height=560, bg='grey')
-    main_frame.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
-    main_frame.grid_propagate(False)
-    
-    # -- inizio - riga 0 --
-    # label for explain text
-    explainTextLabel = Label(main_frame, text=explainText)
-    explainTextLabel.grid(row=0, column=1, sticky="W", padx=35, pady=20)
-    # -- fine - riga 0 --
-    
-    # -- inizio - riga 1 --
-    # buttons to load all the dataset
-    btn_load_ds = Button(main_frame, text="Load image dataset", command=btn_load_ds_method)
-    btn_load_ds.grid(row=1, column=0, sticky="W", padx=10, pady=10)
-    
-    # buttons to train and fit DNN
-    btn_make_DNN = Button(main_frame, text="Train and fit DNN", command=make_model)
-    btn_make_DNN.grid(row=1, column=1, sticky="W", padx=10, pady=10)
-    
-    # label for the result of classifier
-    dataset_label = Label(main_frame, textvariable=status_DS_text)
-    dataset_label.grid(row=1, column=2, sticky="W", padx=10, pady=10)
-    
-    # label for the result of classifier
-    model_label = Label(main_frame, textvariable=status_DNN_text)
-    model_label.grid(row=1, column=3, sticky="W", padx=10, pady=10)
-    # -- fine - riga 1 --
-    
-    # -- inizio - riga 2 --
-    # button to load the test image dataset
-    btn_import_test_image = Button(main_frame, text="Load test image dataset:", command=btn_load_test_ds_method)
-    btn_import_test_image.grid(row=2, column=0, sticky="W", padx=10, pady=10)
-    
-    # label for the result of classifier
-    btn_import_test_image_label = Label(main_frame, textvariable=test_image_label)
-    btn_import_test_image_label.grid(row=2, column=1, sticky="W", padx=10, pady=10)
-    # -- fine - riga 2 --
-    
-    # -- inizio - riga 3 --
-    #image to predict in the center
-    #Create a Label to display the image
-    if image_to_visualize is not None:
-        image_label = Label(main_frame, image= image_to_visualize)
-        image_label.grid(row=3, column=1, sticky="W", padx=10, pady=10)
-    # -- fine - riga 3 --
-    
     # -- inizio - riga 4 --
-    # buttons to load a radom image from DS to predict 
-    btn_load_random_image = Button(main_frame, text="Load image", command=btn_load_image)
-    btn_load_random_image.grid(row=4, column=0, sticky="W", padx=10, pady=10)
     
-    # label for the groundtruth
-    correct_label = Label(main_frame, textvariable=label_image_text)
-    correct_label.grid(row=4, column=1, sticky="W", padx=10, pady=10)
-    
-    # button to predict label of image
-    btn_predict = Button(main_frame, text="Classify", command=predict)
-    btn_predict.grid(row=4, column=2)
-    
-    # label for the result of classifier
-    result_classifier_label = Label(main_frame, textvariable=classify_text)
-    result_classifier_label.grid(row=4, column=3, sticky="W", padx=0, pady=5)
     # -- fine - riga 4 --
     
     # -- inizio - riga 5 --
@@ -280,6 +271,38 @@ def current_view_to_visualise():
     error_text_label.grid(row=6, column=1, sticky="W", padx=0, pady=5)
     # -- fine - riga 6 --
     """
+# chose and take the image to visualize and predict, the image is chosen from test set
+def btn_load_image():
+    global image_to_visualize,index_image_visualized            # global variables references
+    img = None                                                  # variable that contain the image to visualize
+    index = 0                                                   # index of the chosen img on the test dataset
+    error_text.set('')                                          # clean eventual text error
+    
+    if len(test_image) == 0 or len(test_label) == 0:            # check if there are images in test label
+        if len(total_image_ds) != 0:                            # take image from total dataset
+            print("prendo immaginde da total_ds")
+            index = random.randint(0,len(total_image_ds)-1)     # chose a random index
+            index_image_visualized = index      
+            img = total_image_ds[index]                         # take random image from ds, the image at the index position
+            label = str(classes[total_labels_ds[index]])        # take the label of the chosen image    
+            label_image_text.set('Label: '+label)               # shows the label of the chosen image
+        else:                                                   # no dataset loaded
+            error_text.set(er_no_ds_text)                       # shows text error
+    else:                                                       # take image from test dataset
+        print("prendo immagine da set di test")
+        index = random.randint(0,len(test_image)-1)             # chose a random index
+        index_image_visualized = index
+        img = test_image[index]*255                             # remember that the value of the image have been normalized
+        label = str(classes[test_label[index]])                 # take the label of the chosen image 
+        label_image_text.set('Label: '+label)                   # shows the label of the chosen image
+    
+    if img is not None:
+        blue,green,red = cv2.split(img)                         # Rearrange colors
+        img = cv2.merge((red,green,blue))
+        im = PIL.Image.fromarray(np.uint8(img),'RGB')
+        image_to_visualize = ImageTk.PhotoImage(image=im)       # update image to visualize in GUI
+    
+    current_view_to_visualise()                                 # update GUI
 
 # ------------------------------------ end: methods for GUI ------------------------------------
 
@@ -329,6 +352,11 @@ def import_image_from_ds(path_ds):
 # ------------------------------------ end: methods for DS ------------------------------------
 
 # ------------------------------------ start: methods for CNN model ------------------------------------
+# method for fit the CNN model
+def fit_model():
+    global network              # global variables references
+    network = models.Sequential()
+
 # check if there is a saved model and load it
 def load_saved_model(model_name):
     global network,model_trained                                # reference to a global variables
@@ -338,7 +366,7 @@ def load_saved_model(model_name):
         if os.path.exists(save_path):                           # check if there is a model
             network = load_model(save_path)                     # load model
             model_trained = True                                # update status variable
-            status_DNN_text.set('Model: trained')
+            status_model_text.set('Model: trained')
         else:
             error_text.set(er_load_model_unknown_text)          # shows text error
     else:
@@ -354,6 +382,23 @@ def save_model(model_name):
     else:
         error_text.set(er_save_model_text)                      # shows text error
         
+# method to predict the label associated to the image visualized
+def predict(): 
+    if index_image_visualized != -1 and model_trained:      # control check
+        error_text.set('')                                  # clean the error_text
+        if len(test_image) == 0 or len(test_label) == 0:    # check to know what set is used (total_image_ds or total_test_image)
+            # take from total_image_ds
+            print("prendo immagine da set totale")
+            img = total_image_ds[index_image_visualized].reshape((1, img_width, img_height, img_channel))
+        else:
+            # take from total_test_image
+            print("prendo immagine da set di test")
+            img = test_image[index_image_visualized].reshape((1, img_width, img_height, img_channel))
+        # predict
+        predictions = network.predict(img)                              # get the output for each sample
+        classify_text.set(': '+str(classes[np.argmax(predictions)]))    # update GUI
+    else:
+        error_text.set('Before predict you must train model and load an image.')     # update text error
 # ------------------------------------ end: methods for CNN model ------------------------------------
 
 # ------------------------------------ main ------------------------------------        
