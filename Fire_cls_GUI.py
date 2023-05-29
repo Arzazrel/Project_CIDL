@@ -70,6 +70,8 @@ er_load_model_text = "Please insert a model name in the field before load CNN mo
 er_load_model_unknown_text = "There isn't a CNN model with the specified name."         # error text that occur when it's not possible return the specified model
 er_save_model_text = "Please insert a model name in the field before save CNN model."   # error text that occur when try to save a model without specifying the CNN name model
 er_no_ds_text = "Please load the dataset and retry."                                    # error text that occur when user want to work with dataset without loading one
+er_train_without_ds_text = "Before train the model you must load image dataset."        # error text that occur when user want to make and fit the CNN model without loading dataset
+er_eval_without_model_text = "Before evaluate the model you must make and fit or load a mode."  # error text that occur when user want to evaluate the model without make and fit the CNN model
 
 # ---- status variables ----
 model_trained = False                           # variable that show if there is a model trained
@@ -112,6 +114,8 @@ val_img = []                        # contain the images choosen as validation s
 val_label = []                      # contain the labels of the images choosen as validation set in fit
 test_image = []                     # contain the images choosen as test set in evaluation
 test_label = []                     # contain the labels of the images choosen as test set in evaluation
+test_set_split = 0.2                # test set size as a percentage of the total dataset
+val_set_split = 0.1                 # validation set size as a percentage of the training set
 
 # ------------------------------------ end: global var ------------------------------------
 
@@ -178,7 +182,7 @@ def current_view_to_visualise():
     CNN_menu = OptionMenu(top_frame, CNN_menu_text,*CNN_model_text)                 # creating select menu for CNN model
     CNN_menu.grid(row=2, column=1,padx=10)
     
-    btn_fit_model = Button(top_frame, text="Fit CNN model", command=fit_model)      # button to fit CNN model
+    btn_fit_model = Button(top_frame, text="Fit CNN model", command=make_fit_model)      # button to fit CNN model
     btn_fit_model.grid(row=2, column=2, sticky="W", padx=10, pady=10)
     
     model_label = Label(top_frame, textvariable=status_model_text)           # label for the status of DS (missing,loading,loaded)
@@ -248,29 +252,6 @@ def current_view_to_visualise():
     error_label.grid(row=0, column=0, padx=10, pady=10)
     # ---- end: error frame ----
     
-    
-    
-    """
-    # -- inizio - riga 4 --
-    
-    # -- fine - riga 4 --
-    
-    # -- inizio - riga 5 --
-    # buttons to load a radom image from DS to predict 
-    btn_load_random_test_image = Button(main_frame, text="Load test image", command=load_image_test)
-    btn_load_random_test_image.grid(row=5, column=0, sticky="W", padx=10, pady=10)
-    
-    # label for the groundtruth
-    correct_test_label = Label(main_frame, textvariable=label_image_text)
-    correct_test_label.grid(row=5, column=1, sticky="W", padx=10, pady=10)
-    # -- fine - riga 5 --
-    
-    # -- inizio - riga 6 --
-    # label for the error text
-    error_text_label = Label(main_frame, textvariable=error_text)
-    error_text_label.grid(row=6, column=1, sticky="W", padx=0, pady=5)
-    # -- fine - riga 6 --
-    """
 # chose and take the image to visualize and predict, the image is chosen from test set
 def btn_load_image():
     global image_to_visualize,index_image_visualized            # global variables references
@@ -322,7 +303,7 @@ def import_image_from_ds(path_ds):
     for folder in list_dir_ds:                      # for each folder in DS
         classes.append(str(folder))                 # update classes
         index = classes.index(str(folder))          # take index of classes, is teh label of this class
-        p = os.path.join(path_ds,folder)        # path of each folder
+        p = os.path.join(path_ds,folder)            # path of each folder
         #creating a collection with the available images
         for filename in os.listdir(p):                      # for each images on the current folder
             img = cv2.imread(os.path.join(p,filename))      # take current iamge
@@ -349,13 +330,111 @@ def import_image_from_ds(path_ds):
     status_DS_text.set('Image DataSet: downloaded')             # notify the end of the process
     
 
+# method for preprocessing and split the dataset
+def make_set_ds():
+    global test_image, test_label, train_image, train_label  # global variables references
+    
+    # ----- preprocessing and reshape ----
+    lunghezza = len(total_image_ds)                                                     # take the len of the dataset
+    image_ds = total_image_ds.reshape((lunghezza, img_width, img_height, img_channel))  # resize
+    image_ds = image_ds.astype('float32') / 255                                         # normalization
+    labels_ds = to_categorical(total_labels_ds,num_classes=len(classes))                # transform label in categorical format
+    
+    # ---- generete the trining and test set ----
+    # split to generate train and test set
+    train_img_temp, test_image, train_label_temp, test_label = train_test_split(image_ds, labels_ds, test_size=test_set_split , random_state=42, shuffle=True)
+    # split to generate validation set from train set
+    train_image, val_img, train_label, val_label = train_test_split(train_img_temp, train_label_temp, test_size=test_set_split , random_state=42, shuffle=True)
+
 # ------------------------------------ end: methods for DS ------------------------------------
 
 # ------------------------------------ start: methods for CNN model ------------------------------------
-# method for fit the CNN model
-def fit_model():
-    global network              # global variables references
-    network = models.Sequential()
+# method to create and fit model
+def make_fit_model():
+    global model_trained, test_image, test_label, train_image, train_label, network  # global variables references
+    
+    if len(total_image_ds) == 0:                        # control check
+        error_text.set(er_train_without_ds_text)        # update error text
+        return
+    
+    if len(test_image) == 0 or len(train_image) == 0:   # check whether the training and test set have already been made
+        make_set_ds()                                       # split and create the sets
+    
+    error_text.set('')                                  # clear error text
+    status_model_text.set('Model: working')             # notify the start of the process
+    
+    # ---- make the model -----
+    if not model_trained:                       # check if there is a ready model or not 
+        # check what type of model the user want to make and fit
+        
+        # Ifrit model
+        network = models.Sequential()                                   # rete del modello
+        network.add(layers.Conv2D(32, (3, 3),padding='same', activation=hidden_activation, input_shape=(img_width, img_height, img_channel)))
+        network.add(layers.MaxPooling2D((3, 3)))
+        network.add(layers.Conv2D(32, (3, 3), activation=hidden_activation))
+        network.add(layers.MaxPooling2D((3, 3)))
+        network.add(layers.Conv2D(32, (3, 3), activation=hidden_activation))
+        network.add(layers.MaxPooling2D((3, 3)))
+        network.add(layers.Flatten())
+        network.add(layers.Dense(128, activation=hidden_activation))
+        network.add(layers.Dropout(0.2))
+        network.add(layers.Dense(128, activation=hidden_activation))
+        network.add(layers.Dropout(0.2))
+        network.add(layers.Dense(len(classes), activation=output_activation))
+
+        # compile rmsprop o adam
+        network.compile(optimizer='rmsprop',
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
+    
+    network.summary()                                   # summary of the CNN model
+    
+    # create TRAIN SET using generator function and specifying shapes and dtypes
+    train_set = tf.data.Dataset.from_generator(generator_train, 
+                                             output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
+                                                               tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
+    
+    # create VALIDATION SET using generator function and specifying shapes and dtypes
+    val_set = tf.data.Dataset.from_generator(generator_val, 
+                                             output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
+                                                               tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
+    # create TEST SET using generator function and specifying shapes and dtypes
+    test_set = tf.data.Dataset.from_generator(generator_test, 
+                                             output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
+                                                               tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
+    
+    
+    history = network.fit(train_set,validation_data=val_set, epochs=epochs)     # fit model
+    
+    model_trained = True                                # update status variable
+    status_model_text.set('Model: trained')             # notify the end of the process
+    
+    plot(history,"(Training set)")                      # visualize the value for the fit - history.history is a dictionary - call method for plot train result
+    model_evaluate()                                    # evaluate the model 
+
+# method for evaluate the model by the test set
+def model_evaluate():
+    error_text.set('')                                  # clear error text
+    if not model_trained:                               # check control if there is a CNN model ready
+        error_text.set(er_eval_without_model_text)      # update error text
+        return
+    
+    # check if there are images in test label didn't use in the train, ( test_image , test_label)
+    if len(test_image) == 0 or len(test_label) == 0:
+        # split
+        data_train, data_test, labels_train, labels_test = train_test_split(total_image_ds, total_labels_ds, test_size=test_set_split , random_state=42)
+        lunghezza = len(data_test)                                                      # take the len of the dataset
+        data_test = data_test.reshape((lunghezza, img_width, img_height, img_channel))  # resize
+        data_test = data_test.astype('float32') / 255                                   # normalization
+        labels_test = to_categorical(labels_test,num_classes=len(classes))              # transform label in categorical format
+    else:
+        data_test = test_image
+        labels_test = test_label
+    
+    test_loss, test_acc = network.evaluate(data_test, labels_test)                      # obtain loss and accuracy metrics
+    dict_metrics = {'loss': test_loss, 'accuracy': test_acc}                            # create a dictionary contain the metrics
+    plot(dict_metrics,"(Test set)")                                                                  # plot the values obtained
+    
 
 # check if there is a saved model and load it
 def load_saved_model(model_name):
@@ -401,6 +480,23 @@ def predict():
         error_text.set('Before predict you must train model and load an image.')     # update text error
 # ------------------------------------ end: methods for CNN model ------------------------------------
 
+# ------------------------------------ start: utility method ------------------------------------
+# method to plot accuracy and loss. arc is a dictionary with 'loss' and 'accuracy', explain_text is a text to explain better the title of the plot (e.g. (training set)) 
+def plot(arc,explain_text):
+    loss = arc.history["loss"]          # take loss values              
+    acc = arc.history["accuracy"]       # take accuracy values
+    # plot
+    plt.figure()
+    plt.plot(loss,'o-b')
+    plt.title('Loss '+str(explain_text))
+    plt.show()
+    plt.figure()
+    plt.plot(acc,'o-b')
+    plt.title('Accuracy '+str(explain_text))
+    plt.show()
+
+# ------------------------------------ end: utility method ------------------------------------
+
 # ------------------------------------ main ------------------------------------        
 if __name__ == "__main__":
     window.title("Ifrit")
@@ -408,7 +504,6 @@ if __name__ == "__main__":
     window.resizable(False, False)
     
     #set_background_image()          # set background image
-    #load_saved_model()              # method for load a model if is already exist
     current_view_to_visualise()     # method for visualize the correct GUI
     
     # handle the window closing by the user
