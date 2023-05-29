@@ -332,7 +332,7 @@ def import_image_from_ds(path_ds):
 
 # method for preprocessing and split the dataset
 def make_set_ds():
-    global test_image, test_label, train_image, train_label  # global variables references
+    global test_image, test_label, train_image, train_label                             # global variables references
     
     # ----- preprocessing and reshape ----
     lunghezza = len(total_image_ds)                                                     # take the len of the dataset
@@ -340,12 +340,134 @@ def make_set_ds():
     image_ds = image_ds.astype('float32') / 255                                         # normalization
     labels_ds = to_categorical(total_labels_ds,num_classes=len(classes))                # transform label in categorical format
     
-    # ---- generete the trining and test set ----
+    # ---- generete the training and test set ----
     # split to generate train and test set
     train_img_temp, test_image, train_label_temp, test_label = train_test_split(image_ds, labels_ds, test_size=test_set_split , random_state=42, shuffle=True)
     # split to generate validation set from train set
     train_image, val_img, train_label, val_label = train_test_split(train_img_temp, train_label_temp, test_size=test_set_split , random_state=42, shuffle=True)
 
+# ------------------ start: generetor function ------------------
+# explanation: for large dataset with large image or big batch size the memory memory may not be sufficient. 
+#              To avoid memory overflow, the sets are supplied in batches via yeld istruction.
+# define generator function to do the training set
+def generator_train():
+    # create the tensor that will contain the data
+    img_tensor = []                                             # tensor that contain the images of one batch from the set
+    label_tensor = []                                           # tensor that contain the labels of one batch from the set
+    img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
+    label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
+    
+    rest = batch_size - (len(train_image) % batch_size)         # check if the division by batch_size produce rest
+    #print("lunghezza totale: ", len(total_train_image), " Batch_size: ",batch_size, " modulo: ",len(total_train_image) % batch_size, " mancante(rest): ",rest)
+    for idx in range(len(train_image)):                         # organize the sample in batch
+        # take one image and the corresponding labels
+        img = train_image[idx]                              
+        label = train_label[idx]
+        # add new element and convert to TF tensors
+        img_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+        label_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+        
+        if rest != batch_size and idx < rest:                   #check for the rest
+            #print("aggiungo elemento ",idx," al contenitore per riempire il batch size finale")
+            # add this sample for the future (sample in the rest)
+            img_rest_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+            label_rest_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+
+        if len(img_tensor) == batch_size:                       # check to see if batch is full (reached batch_size)
+            yield img_tensor, label_tensor                      # return the batch
+            # clean list
+            img_tensor.clear()
+            label_tensor.clear()
+            
+        if idx == (len(train_image) - 1):                       # check if the set is finished, last batch
+            #print("arrivato alla fine")
+            if rest != batch_size:                              # check if there are rest to fix
+                #print("Sono in ultimo batch\nLunghezza ad ora del batch: ",len(img_tensor))
+                #there are samples that don't complete a batch, add rest sample to complete the last batch
+                for i in range(rest):
+                    img_tensor.append(img_rest_tensor[i])
+                    label_tensor.append(label_rest_tensor[i])
+                #print("Lunghezza del batch dopo aggiunta: ",len(img_tensor))
+                yield img_tensor, label_tensor                  # return the last batch
+            return
+
+# define generator function to do the validation set
+def generator_val():
+    # create the tensor that will contain the data
+    img_tensor = []                                             # tensor that contain the images of one batch from the set
+    label_tensor = []                                           # tensor that contain the labels of one batch from the set
+    img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
+    label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
+    
+    rest = batch_size - (len(val_img) % batch_size)             # check if the division by batch_size produce rest
+    
+    for idx in range(len(val_img)):                             # organize the sample in batch
+        # take one image and the corresponding mask
+        img = val_img[idx]
+        label = val_label[idx]
+        # add new element and convert to TF tensors
+        img_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+        label_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+        
+        if rest != batch_size and idx < rest:                   #check for the rest
+            # add this sample for the future
+            img_rest_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+            label_rest_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+
+        if len(img_tensor) == batch_size:                       # check to see if batch is full (reached batch_size)
+            yield img_tensor, label_tensor                      # return the batch
+            # clean list
+            img_tensor.clear()
+            label_tensor.clear()
+            
+        if idx == (len(val_img) - 1):                           # check if the set is finished, last batch
+            if rest != batch_size:                              # check if there are rest to fix
+                #there are samples that don't complete a batch, add rest sample to complete the last batch
+                for i in range(rest):
+                    img_tensor.append(img_rest_tensor[i])
+                    label_tensor.append(label_rest_tensor[i])
+                yield img_tensor, label_tensor                  # return the last batch
+            return
+        
+# define generator function to do the test set
+def generator_test():
+    # create the tensor that will contain the data
+    img_tensor = []                                             # tensor that contain the images of one batch from the set
+    label_tensor = []                                           # tensor that contain the labels of one batch from the set
+    img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
+    label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
+    
+    rest = batch_size - (len(test_image) % batch_size)          # check if the division by batch_size produce rest
+    
+    for idx in range(len(test_image)):                          # organize the sample in batch
+        # extract one image and the corresponding mask
+        img = test_image[idx]
+        label = test_label[idx]
+
+        # add new element and convert to TF tensors
+        img_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+        label_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+        
+        if rest != batch_size and idx < rest:                   #check for the rest
+            # add this sample for the future
+            img_rest_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+            label_rest_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+
+        if len(img_tensor) == batch_size:                       # check to see if batch is full (reached batch_size)
+            yield img_tensor, label_tensor                      # return the batch
+            # clean list
+            img_tensor.clear()
+            label_tensor.clear()
+            
+        if idx == (len(test_image) - 1):                        # check if the set is finished, last batch
+            if rest != batch_size:                              # check if there are rest to fix
+                #there are samples that don't complete a batch, add rest sample to complete the last batch
+                for i in range(rest):
+                    img_tensor.append(img_rest_tensor[i])
+                    label_tensor.append(label_rest_tensor[i])
+                yield img_tensor, label_tensor                  # return the last batch
+            return
+# ------------------ end: generetor function ------------------
 # ------------------------------------ end: methods for DS ------------------------------------
 
 # ------------------------------------ start: methods for CNN model ------------------------------------
@@ -382,7 +504,7 @@ def make_fit_model():
         network.add(layers.Dropout(0.2))
         network.add(layers.Dense(len(classes), activation=output_activation))
 
-        # compile rmsprop o adam
+        # compile rmsprop
         network.compile(optimizer='rmsprop',
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
