@@ -30,7 +30,7 @@ from threading import Thread
 # for tensorflow-GPU
 from tensorflow.python.client import device_lib 
 # import of my files
-import AlexNet_class as AlexNetClass
+import AlexNet_class as ANet
 
 # ------------------------------------ start: global var ------------------------------------
 # ---- GUI variables ----
@@ -193,7 +193,7 @@ def current_view_to_visualise():
     CNN_menu = OptionMenu(top_frame, CNN_menu_text,*CNN_model_text)                 # creating select menu for CNN model
     CNN_menu.grid(row=2, column=1,padx=10)
     
-    btn_fit_model = Button(top_frame, text="Fit CNN model", command=lambda: make_fit_model(CNN_menu.get()))      # button to fit CNN model
+    btn_fit_model = Button(top_frame, text="Fit CNN model", command=lambda: make_fit_model(CNN_menu_text.get()))      # button to fit CNN model
     btn_fit_model.grid(row=2, column=2, sticky="W", padx=10, pady=10)
     
     model_label = Label(top_frame, textvariable=status_model_text)           # label for the status of DS (missing,loading,loaded)
@@ -589,32 +589,33 @@ def make_fit_model(chosen_model):
             error_text.set(er_no_model_specified_text)      # update error text
             return                                          # user must specify a template
         elif chosen_model == "AlexNet":
-            print("modello scelto: AlexNet")
+            network = ANet.AlexNet(2)                       # create an instance of the AlexNet class
+            network.make_model()                            # make model (AlexNet architecture)
+            network.compile_model()                         # compile model
         elif chosen_model == "GoogleNet":
             print("modello scelto: GoogleNet")
-        elif chosen_model == "Ifrit":                       # Ifrit model
+        elif chosen_model == "Ifrit":                       
             
             network = models.Sequential()                                   # rete del modello
             network.add(layers.Conv2D(32, (3, 3),padding='same', activation=hidden_activation, input_shape=(img_width, img_height, img_channel)))
             network.add(layers.MaxPooling2D((3, 3)))
-            """network.add(layers.Conv2D(32, (3, 3),padding='same', activation=hidden_activation))
+            network.add(layers.Conv2D(32, (3, 3),padding='same', activation=hidden_activation))
             network.add(layers.MaxPooling2D((3, 3)))
             network.add(layers.Conv2D(32, (3, 3),padding='same', activation=hidden_activation))
-            network.add(layers.MaxPooling2D((3, 3)))"""
+            network.add(layers.MaxPooling2D((3, 3)))
             network.add(layers.Flatten())
             network.add(layers.Dense(128, activation=hidden_activation))
             network.add(layers.Dropout(0.2))
             network.add(layers.Dense(128, activation=hidden_activation))
             network.add(layers.Dropout(0.2))
             network.add(layers.Dense(len(classes), activation=output_activation))
-
+            
+            network.summary()                                   # summary of the CNN model
+            
             # compile rmsprop
             network.compile(optimizer='rmsprop',
                           loss='categorical_crossentropy',
                           metrics=['accuracy'])
-        
-    
-    network.summary()                                   # summary of the CNN model
     
     # create TRAIN SET using generator function and specifying shapes and dtypes
     train_set = tf.data.Dataset.from_generator(generator_train, 
