@@ -30,7 +30,7 @@ from threading import Thread
 # for tensorflow-GPU
 from tensorflow.python.client import device_lib 
 # import of my files
-#import Classifier as Clf
+import AlexNet_class as AlexNetClass
 
 # ------------------------------------ start: global var ------------------------------------
 # ---- GUI variables ----
@@ -106,8 +106,8 @@ path_dir_model = "Model"
 # ---- model variables ----
 network = None                                  # contain the CNN model, default value is None
 batch_size = 32                                 # batch size for training, this is the default value
-img_height = 240                                # height of the images in input to CNN
-img_width = 240                                 # width of the images in input to CNN
+img_height = 224                                # height of the images in input to CNN
+img_width = 224                                 # width of the images in input to CNN
 img_channel = 3                                 # channel of the images in input to CNN                
 output_activation = 'softmax'                   # activation function of the output layer  
 hidden_activation = 'relu'                      # activation function of the hidden layer
