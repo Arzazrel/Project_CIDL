@@ -31,6 +31,7 @@ from threading import Thread
 from tensorflow.python.client import device_lib 
 # import of my files
 import AlexNet_class as ANet
+import GoogLeNet_class as GLNet
 
 # ------------------------------------ start: global var ------------------------------------
 # ---- GUI variables ----
@@ -589,11 +590,13 @@ def make_fit_model(chosen_model):
             error_text.set(er_no_model_specified_text)      # update error text
             return                                          # user must specify a template
         elif chosen_model == "AlexNet":
-            network = ANet.AlexNet(2)                       # create an instance of the AlexNet class
+            network = ANet.AlexNet(len(classes))            # create an instance of the AlexNet class
             network.make_model()                            # make model (AlexNet architecture)
             network.compile_model()                         # compile model
         elif chosen_model == "GoogleNet":
-            print("modello scelto: GoogleNet")
+            network = GLNet.GoogLeNet(len(classes))         # create an instance of the AlexNet class
+            network.make_model()                            # make model (GoogLeNet architecture)
+            network.compile_model()                         # compile model
         elif chosen_model == "Ifrit":                       
             
             network = models.Sequential()                                   # rete del modello
