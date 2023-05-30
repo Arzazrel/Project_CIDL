@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author: Made by Alessandro Diana
+@author: Alessandro Diana
 
 dataset used: https://www.kaggle.com/datasets/mohnishsaiprasad/forest-fire-images     All credit belongs to the respective owners and creators of the datasets
 """
