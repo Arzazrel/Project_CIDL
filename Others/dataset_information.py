@@ -10,12 +10,15 @@ import os
 import cv2
 
 # ------------------------------------ start: global var ------------------------------------
+# ---- status variable ----
+del_corrupt_img = True                          # variable that indicate to the program whether it should delete any corrupted images in the dataset
 # ---- dataset variables ----
 img_number = 0                                  # total number of images in the dataset
 classes = {}                                    # dictionary containing all the classes in the dataset and the number of images of each class
 format_dict = {}                                # dictionary containing all the image formats in the dataset and for each of them the number of images
 shape_dict = {}                                 # dictionary containing all the image shapes in the dataset and for each of them the number of images
 top_shape_images = 10                           # the top frequent shapes for the images in the dataset
+corrupt_images = []                             # array that will contain the name of the corrupted images that are in the dataset
 # ---- path variables ----
 path_dir_ds = "Dataset\Train_DS"                # folder in which there are the image ds for training
 path_ds = os.path.join(os.pardir,path_dir_ds)   # complete folder to reach the ds -- P.S. For more detail read note 0, please (at the end of the file) 
@@ -48,11 +51,17 @@ for folder in list_dir_ds:                      # for each folder in DS
             if shape_dict.get(str(img.shape)) is None:     # check if the shape is already registered
                 shape_dict[str(img.shape)] = 1             # set counter equal 0
             else:
-                shape_dict[str(img.shape)] += 1            # update counter               
+                shape_dict[str(img.shape)] += 1            # update counter  
+        else:                                           # corrupted image
+            corrupt_images.append(str(filename))        # update 
+            if del_corrupt_img:                         # check if the porgram has to delete the corrupted images or not
+                os.remove(os.path.join(p,filename))     # delete the images
 
 # Dataset characteristics output
 print("The dataset has " , img_number, " images.")                                      # total number of images in dataset
 print("The number of classes are ",len(classes.keys()), ". ", list(classes.keys()))     # number of classes and name of each class
+if len(corrupt_images) != 0:                                                            #check if there are corrupted images
+    print("There are ", len(corrupt_images)," corrupted images.\n",corrupt_images)
 # number of shapes and images number for each shape
 print("The number of different images shapes are ",len(shape_dict.keys()))
 #for k,v in shape_dict.items():                                                          # for to see all images shapes
