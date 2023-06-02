@@ -36,7 +36,7 @@ import GoogLeNet_class as GLNet
 # ------------------------------------ start: global var ------------------------------------
 # ---- GUI variables ----
 window = Tk()
-window_width = 800                              # is the width of the tkinter window
+window_width = 910                              # is the width of the tkinter window
 window_height = 700                             # is the height of the tkinter window
 # explain frame
 ex_f_padx = 10                                  # horizontal pad for the explain frame
@@ -76,6 +76,7 @@ er_train_without_ds_text = "Before train the model you must load image dataset."
 er_eval_without_model_text = "Before evaluate the model you must make and fit or load a mode."  # error text that occur when user want to evaluate the model without make and fit the CNN model
 er_no_model_specified_text = "Please chose a CNN model or load one before fit CNN model."       # error text that occur when user want to make the model without chose one
 er_predict_text = "Before predict you must train model and load an image."              # error text that occur when user want to predict without take image or train model
+er_format_epoch_text = "Error format in the Number of epochs input, you must insert a positive number, please retry."   # error text that occur when user insert a incorrect number of epochs format
 
 # ---- status variables ----
 model_trained = False                           # variable that show if there is a model trained
@@ -84,7 +85,7 @@ index_image_visualized = -1
 status_DS_text = StringVar()                            # text that shows the state of the dataset (missing, loading, loaded)
 status_DS_text.set('Image DataSet: missing')            # the default value is 'missing'
 status_ext_test_DS_text = StringVar()                   # text that shows the state of the extern test dataset (missing, loading, loaded)
-status_ext_test_DS_text.set('Image DataSet: missing')   # the default value is 'missing'
+status_ext_test_DS_text.set('External test DS: missing')   # the default value is 'missing'
 CNN_menu_text = StringVar()                             # text that shows in the menu the type of CNN model select, the possible values are (None, AlexNet, GoogleNet). The chosen model can be train and fit
 CNN_menu_text.set('None')                               # the default value is 'None'
 status_model_text = StringVar()                         # text that shows the state of the CNN model (empty, trained)
@@ -170,14 +171,14 @@ def current_view_to_visualise():
     btn_load_ds.grid(row=0, column=0, sticky="W", padx=10, pady=10)
     
     dataset_label = Label(top_frame, textvariable=status_DS_text)           # label for the status of DS (missing,loading,loaded)
-    dataset_label.grid(row=0, column=4, sticky="W", padx=10, pady=10)    
+    dataset_label.grid(row=0, column=5, sticky="W", padx=10, pady=10)    
     # -- end: row 0 --
     
     # -- start: row 1 --
     name_model_label = Label(top_frame, text="CNN model name: ")                # label for the name of the CNN model to load or to save
     name_model_label.grid(row=1, column=0, sticky="W", padx=10, pady=10) 
     
-    name_model_input = Entry(top_frame)                                     # entry for the CNN model name
+    name_model_input = Entry(top_frame, width=20)                                     # entry for the CNN model name
     name_model_input.grid(row=1, column=1, sticky="WE", padx=10)
     
     btn_load_model = Button(top_frame, text="Load CNN model", command=lambda: load_saved_model(name_model_input.get()))   # button to load the CNN model
@@ -194,11 +195,17 @@ def current_view_to_visualise():
     CNN_menu = OptionMenu(top_frame, CNN_menu_text,*CNN_model_text)                 # creating select menu for CNN model
     CNN_menu.grid(row=2, column=1,padx=10)
     
-    btn_fit_model = Button(top_frame, text="Fit CNN model", command=lambda: make_fit_model(CNN_menu_text.get()))      # button to fit CNN model
-    btn_fit_model.grid(row=2, column=2, sticky="W", padx=10, pady=10)
+    epoch_label = Label(top_frame, text="Number of epoch:")                         # label to explain the number of epoch
+    epoch_label.grid(row=2, column=2, sticky="W", padx=10, pady=10) 
+    
+    number_epochs_input = Entry(top_frame, width=15)                                             # entry for the number of epochs
+    number_epochs_input.grid(row=2, column=3, sticky="WE", padx=10)
+    
+    btn_fit_model = Button(top_frame, text="Fit CNN model", command=lambda: make_fit_model(CNN_menu_text.get(),number_epochs_input.get()))      # button to fit CNN model
+    btn_fit_model.grid(row=2, column=4, sticky="W", padx=10, pady=10)
     
     model_label = Label(top_frame, textvariable=status_model_text)           # label for the status of DS (missing,loading,loaded)
-    model_label.grid(row=2, column=4, sticky="W", padx=10, pady=10)  
+    model_label.grid(row=2, column=5, sticky="W", padx=10, pady=10)  
     # -- end: row 2 --
     # ---- end: top frame ----
     
@@ -400,7 +407,7 @@ def import_image_from_ext_test_ds(path_ds):
         error_text.set(er_no_ds_text)                   # update error text
         return
     
-    status_ext_test_DS_text.set('Extern test DS: loading')   # notify the start of the import
+    status_ext_test_DS_text.set('External test DS: loading')   # notify the start of the import
     # take the images and labels form DataSet
     for folder in list_dir_ds:                      # for each folder in DS
         index = classes.index(str(folder))          # take index of classes, is teh label of this class
@@ -571,17 +578,29 @@ def generator_test():
 
 # ------------------------------------ start: methods for CNN model ------------------------------------
 # method to create and fit model, 'chosen_model' indicate the model chosen by user by the menu tillbar
-def make_fit_model(chosen_model):
+def make_fit_model(chosen_model,number_epoch):
     global model_trained, test_image, test_label, train_image, train_label, network  # global variables references
     
+    error_text.set('')                                  # clear error text
     if len(total_image_ds) == 0:                        # control check
         error_text.set(er_train_without_ds_text)        # update error text
         return
     
     if len(test_image) == 0 or len(train_image) == 0:   # check whether the training and test set have already been made
-        make_set_ds()                                       # split and create the sets
+        make_set_ds()                                   # split and create the sets
+        
+    if number_epoch:                                    # control check for number of epochs of the train   
+        if number_epoch.isnumeric():                    # check if the string is a number or not, this method doesn't recongnize the negative number but it's okay for our case, number of epochs must be positive number
+            try:
+                int_numb_epoch = int(number_epoch)      # convert to int if is possible
+            except:
+                error_text.set(er_format_epoch_text)    # update error text  
+                return
+            epochs = int_numb_epoch                     # upate the value of epochs
+        else:                                           
+            error_text.set(er_format_epoch_text)        # update error text 
+    # if user don't insert a value for the number of epochs the program will use a default value
     
-    error_text.set('')                                  # clear error text
     status_model_text.set('Model: working')             # notify the start of the process
     # ---- make the model -----
     if not model_trained:                                   # check if there is a ready model or not 
@@ -592,7 +611,7 @@ def make_fit_model(chosen_model):
         elif chosen_model == "AlexNet":
             network = ANet.AlexNet(len(classes))            # create an instance of the AlexNet class
             network.make_model()                            # make model (AlexNet architecture)
-            network.compile_model()                         # compile model
+            network.compile_model()                         # compile 
         elif chosen_model == "GoogleNet":
             network = GLNet.GoogLeNet(len(classes))         # create an instance of the AlexNet class
             network.make_model()                            # make model (GoogLeNet architecture)
