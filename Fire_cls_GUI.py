@@ -377,6 +377,8 @@ def import_image_from_ds(path_ds):
                 else:
                     total_image_ds.append(img)                                          # add image to total_image_ds
                     total_labels_ds.append(index)                                       # add correlated label to total_lael_ds
+            else:
+                print("Errore nel caricare immagine ",filename)
                     
     # convert in np.array
     total_image_ds = np.array(total_image_ds)
@@ -757,6 +759,23 @@ def plot(arc,explain_text):
     plt.plot(acc,'o-b')
     plt.title('Accuracy '+str(explain_text))
     plt.show()
+    
+# method to check GPU device avaible and setting
+def GPU_check():
+    print(device_lib.list_local_devices())
+    print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+    gpus = tf.config.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+                logical_gpus = tf.config.list_logical_devices('GPU')
+                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
+    print("Memoria usata: ",print("",tf.config.experimental.get_memory_info('GPU:0')['current'] / 10**9))
 
 # ------------------------------------ end: utility method ------------------------------------
 
