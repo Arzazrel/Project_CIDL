@@ -16,6 +16,8 @@ from tensorflow.keras import models
 from tensorflow.keras import layers
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model
+from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping
 # for image visualization
 import matplotlib.pyplot as plt
 import cv2
@@ -82,7 +84,7 @@ er_format_epoch_text = "Error format in the Number of epochs input, you must ins
 # ---- status variables ----
 model_trained = False                           # variable that show if there is a model trained
 image_to_visualize = None                       # image that will be visualized in the GUI
-index_image_visualized = -1
+index_image_visualized = -1                     # index of the image visualized in GUI, default value is -1
 status_DS_text = StringVar()                            # text that shows the state of the dataset (missing, loading, loaded)
 status_DS_text.set('Image DataSet: missing')            # the default value is 'missing'
 status_ext_test_DS_text = StringVar()                   # text that shows the state of the extern test dataset (missing, loading, loaded)
@@ -105,7 +107,8 @@ label_ext_image_text.set('')                    # default value
 # ---- path variables ----
 path_dir_ds = "Dataset\Train_DS"                # folder in which there are the image ds for training
 path_dir_test_ds = "Dataset\Test_DS"            # folder in which there are the image ds for testing
-path_dir_model = "Model"
+path_dir_model = "Model"                        # folder in which there are saved the CNN model
+path_check_point_model = os.path.join(path_dir_model,"train_hdf5")  # folder in which there are saved the checkpoint for the model training
 # ---- model variables ----
 network = None                                  # contain the CNN model, default value is None
 batch_size = 32                                 # batch size for training, this is the default value
@@ -115,6 +118,7 @@ img_channel = 3                                 # channel of the images in input
 output_activation = 'softmax'                   # activation function of the output layer  
 hidden_activation = 'relu'                      # activation function of the hidden layer
 epochs = 100                                    # number of epochs for training, this is the deafault value
+early_patience = 10                             # number of epochs with no improvement after which training will be stopped 
 
 # ---- dataset variables ----
 classes = []                        # the label associated with each class will be the position that the class name will have in this array
@@ -641,8 +645,27 @@ def make_fit_model(chosen_model,number_epoch):
                                              output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
                                                                tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
     
+    # ---- fit the model -----
     
-    history = network.fit(train_set,validation_data=val_set, epochs=epochs)     # fit model
+    checkpoint = ModelCheckpoint(filepath = path_check_point_model+'/weight_seg_'+chosen_model+".hdf5", verbose = 1, save_best_only = True, monitor='val_loss', mode='min') # val_loss, min, val_categorical_accuracy, max
+    
+    eStop = EarlyStopping(patience = early_patience, verbose = 1, restore_best_weights = True, monitor='val_loss')
+    
+    print("lunghezza train ", len(train_image), " lunghezza test ", len(test_image))
+    
+    # train steps
+    if (len(train_image) % batch_size) == 0:          # check if the division by batch_size produce rest
+        train_step = len(train_image) / batch_size
+    else:
+        train_step = (len(train_image) / batch_size) + 1
+    
+    # val steps
+    if (len(test_image) % batch_size) == 0:          # check if the division by batch_size produce rest
+        val_step = len(test_image) / batch_size
+    else:
+        val_step = (len(test_image) / batch_size) + 1
+    
+    history = network.fit(train_set,validation_data=val_set, epochs=epochs,steps_per_epoch=train_step, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
     
     model_trained = True                                # update status variable
     status_model_text.set('Model: trained')             # notify the end of the process

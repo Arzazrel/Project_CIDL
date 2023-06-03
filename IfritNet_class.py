@@ -101,13 +101,15 @@ class IfriNet:
             self.model.add(layers.Dropout(0.3))                                                         # dropout
             # Output layer
             self.model.add(layers.Dense(self.num_classes, activation='softmax'))
+        
+        self.model.summary()
             
     # method for compile the model
     def compile_model(self):
         # compile rmsprop
         self.model.compile(optimizer='adam',
                       loss='categorical_crossentropy',
-                      metrics=['accuracy','TruePositive','TrueNegative','FalsePositive','FalseNegative'])
+                      metrics=['accuracy'])
         
     # method for return the model
     def return_model(self):
