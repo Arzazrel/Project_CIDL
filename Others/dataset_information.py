@@ -8,10 +8,13 @@ Explanation:
 """
 import os
 import cv2
+import numpy as np
+import matplotlib.pyplot as plt
 
 # ------------------------------------ start: global var ------------------------------------
 # ---- status variable ----
-del_corrupt_img = True                          # variable that indicate to the program whether it should delete any corrupted images in the dataset
+del_corrupt_img = False                         # variable that indicate to the program whether it should delete any corrupted images in the dataset
+
 # ---- dataset variables ----
 img_number = 0                                  # total number of images in the dataset
 classes = {}                                    # dictionary containing all the classes in the dataset and the number of images of each class
@@ -19,6 +22,8 @@ format_dict = {}                                # dictionary containing all the 
 shape_dict = {}                                 # dictionary containing all the image shapes in the dataset and for each of them the number of images
 top_shape_images = 10                           # the top frequent shapes for the images in the dataset
 corrupt_images = []                             # array that will contain the name of the corrupted images that are in the dataset
+RGB_mean_dict = {}                              # contain for each class the value for the color Blue , Green, Red. For a quick comparison of the colour distribution in the various classes and dataset.
+                                                # the dictionary will have a key for each class and the corresponding value will be an array of three values.
 # ---- path variables ----
 path_dir_ds = "Dataset\Train_DS"                # folder in which there are the image ds for training
 path_ds = os.path.join(os.pardir,path_dir_ds)   # complete folder to reach the ds -- P.S. For more detail read note 0, please (at the end of the file) 
@@ -52,6 +57,17 @@ for folder in list_dir_ds:                      # for each folder in DS
                 shape_dict[str(img.shape)] = 1             # set counter equal 0
             else:
                 shape_dict[str(img.shape)] += 1            # update counter  
+            # see the color contribution
+            # for each image calculate the mean of the value of the Red, Green and Blue
+            red_mean = img[:,:,2].mean()
+            green_mean = img[:,:,1].mean()
+            blue_mean = img[:,:,0].mean()
+            if RGB_mean_dict.get(str(folder)) is None:                              # check if there are already value for this class
+                RGB_mean_dict[str(folder)] = [blue_mean,green_mean,red_mean]        # set with value
+            else:
+                temp_RGB = RGB_mean_dict[str(folder)]
+                new_RGB = [temp_RGB[0] + blue_mean, temp_RGB[1] + green_mean , temp_RGB[2] + red_mean ]
+                RGB_mean_dict[str(folder)] = new_RGB                                # update value
         else:                                           # corrupted image
             corrupt_images.append(str(filename))        # update 
             if del_corrupt_img:                         # check if the porgram has to delete the corrupted images or not
@@ -87,6 +103,17 @@ for k,v in sorted_format_dict.items():                                          
     print(k, ': ', v)                                                                   # print key and value
     count +=1                                                                           # update counter  
          
+# show a plot that displays BRG bar gram for each class
+for k,v in RGB_mean_dict.items():                                   # for to slide the sorted dict
+    color = ["Blue", "Green", "Red"]                                # laber for bar in the bar gram                        
+    x_pos = np.arange(len(color))
+    plt.bar(x_pos, v, align='center')
+    plt.xticks(x_pos, color)
+    plt.ylabel('Value')
+    plt.xlabel('Color')
+    plt.title(k)                                                    # the title of the plot is the class 
+    plt.show()                                                      # shows bar grams
+
 """
 -------- Notes --------
 -- Note 0 --
