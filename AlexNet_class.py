@@ -63,6 +63,7 @@ class AlexNet:
         
         """
         # version of the model made using batch normalisation
+        # 1st Conv layer (has Max pooling)
         self.model.add(layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4,4), padding='valid', activation='relu', input_shape=(self.img_width, self.img_height, self.img_channel)))
         self.model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
         self.model.add(layers.BatchNormalization())                                                 # Batch Normalisation
@@ -103,7 +104,7 @@ class AlexNet:
         
     # method for return the model
     def return_model(self):
-        return self.Model
+        return self.model
         
 """
 brief description:

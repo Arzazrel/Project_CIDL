@@ -13,6 +13,8 @@ from tensorflow.keras import layers
 from tensorflow.keras import losses
 from tensorflow.keras import Model
 
+# ------------------------------------ start: utility methods ------------------------------------
+
 # utility function to implement the inception module in which 1×1, 3×3, 5×5 convolution and 3×3 max pooling are executed in parallel and their output is merged.
 # in_net: is the input , fil_1x1: is the number of filters of conv 1x1 layer, the same for other similar fil
 # fil_1x1_3x3: is the number of filters of the 1x1 reduction convolutionary layer before conv 3x3 and so on for others similar fil
@@ -32,6 +34,8 @@ def inception_mod(in_net, fil_1x1, fil_1x1_3x3, fil_3x3, fil_1x1_5x5, fil_5x5, f
     path4 = layers.Conv2D(filters=fil_m_pool, kernel_size=(1, 1), padding='same', activation='relu')(path4)     # conv 1x1 to reduce
     
     return tf.concat([path1, path2, path3, path4], axis=3)                  # merge of the different path
+
+# ------------------------------------ end: utility methods ------------------------------------
 
 # class that implement the GoogLeNet model
 class GoogLeNet:
@@ -100,11 +104,11 @@ class GoogLeNet:
                     losses.sparse_categorical_crossentropy,
                     losses.sparse_categorical_crossentropy],
               loss_weights=[1, 0.3, 0.3],
-              metrics=['accuracy'])
+              metrics=['accuracy','TruePositive','TrueNegative','FalsePositive','FalseNegative'])
         
     # method for return the model
     def return_model(self):
-        return self.Model
+        return self.model
     
 """
 brief description:

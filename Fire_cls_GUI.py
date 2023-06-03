@@ -32,6 +32,7 @@ from tensorflow.python.client import device_lib
 # import of my files
 import AlexNet_class as ANet
 import GoogLeNet_class as GLNet
+import IfritNet_class as IfritNet
 
 # ------------------------------------ start: global var ------------------------------------
 # ---- GUI variables ----
@@ -621,27 +622,10 @@ def make_fit_model(chosen_model,number_epoch):
             GLNet_Model.compile_model()                     # compile model
             network = GLNet_Model.return_model()            # return model
         elif chosen_model == "Ifrit":                       
-            
-            network = models.Sequential()                                   # rete del modello
-            network.add(layers.Conv2D(32, (3, 3),padding='same', activation=hidden_activation, input_shape=(img_width, img_height, img_channel)))
-            network.add(layers.MaxPooling2D((3, 3)))
-            network.add(layers.Conv2D(32, (3, 3),padding='same', activation=hidden_activation))
-            network.add(layers.MaxPooling2D((3, 3)))
-            network.add(layers.Conv2D(32, (3, 3),padding='same', activation=hidden_activation))
-            network.add(layers.MaxPooling2D((3, 3)))
-            network.add(layers.Flatten())
-            network.add(layers.Dense(128, activation=hidden_activation))
-            network.add(layers.Dropout(0.2))
-            network.add(layers.Dense(128, activation=hidden_activation))
-            network.add(layers.Dropout(0.2))
-            network.add(layers.Dense(len(classes), activation=output_activation))
-            
-            network.summary()                                   # summary of the CNN model
-            
-            # compile rmsprop
-            network.compile(optimizer='rmsprop',
-                          loss='categorical_crossentropy',
-                          metrics=['accuracy'])
+            Ifrit_Model = IfritNet.IfriNet(len(classes))    # create an instance of the IfriNet class
+            Ifrit_Model.make_model(1)                       # make model (IfriNet 1 architecture)
+            Ifrit_Model.compile_model()                     # compile model
+            network = Ifrit_Model.return_model()            # return model
     
     # create TRAIN SET using generator function and specifying shapes and dtypes
     train_set = tf.data.Dataset.from_generator(generator_train, 
