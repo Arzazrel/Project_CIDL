@@ -581,7 +581,7 @@ def generator_test():
 # ------------------------------------ start: methods for CNN model ------------------------------------
 # method to create and fit model, 'chosen_model' indicate the model chosen by user by the menu tillbar
 def make_fit_model(chosen_model,number_epoch):
-    global model_trained, test_image, test_label, train_image, train_label, network  # global variables references
+    global model_trained, test_image, test_label, train_image, train_label, network, epochs  # global variables references
     
     error_text.set('')                                  # clear error text
     if len(total_image_ds) == 0:                        # control check
@@ -611,13 +611,15 @@ def make_fit_model(chosen_model,number_epoch):
             error_text.set(er_no_model_specified_text)      # update error text
             return                                          # user must specify a template
         elif chosen_model == "AlexNet":
-            network = ANet.AlexNet(len(classes))            # create an instance of the AlexNet class
-            network.make_model()                            # make model (AlexNet architecture)
-            network.compile_model()                         # compile 
+            ANet_Model = ANet.AlexNet(len(classes))         # create an instance of the AlexNet class
+            ANet_Model.make_model()                         # make model (AlexNet architecture)
+            ANet_Model.compile_model()                      # compile 
+            network = ANet_Model.return_model()             # return model
         elif chosen_model == "GoogleNet":
-            network = GLNet.GoogLeNet(len(classes))         # create an instance of the AlexNet class
-            network.make_model()                            # make model (GoogLeNet architecture)
-            network.compile_model()                         # compile model
+            GLNet_Model = GLNet.GoogLeNet(len(classes))     # create an instance of the AlexNet class
+            GLNet_Model.make_model()                        # make model (GoogLeNet architecture)
+            GLNet_Model.compile_model()                     # compile model
+            network = GLNet_Model.return_model()            # return model
         elif chosen_model == "Ifrit":                       
             
             network = models.Sequential()                                   # rete del modello

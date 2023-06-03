@@ -7,7 +7,6 @@ explanation: file containing the class that reproduces the AlexNet model
 description: network description at the end of the file
 """
 import tensorflow as tf
-import tensorflow.keras
 from tensorflow.keras import models
 from tensorflow.keras import layers
 from tensorflow.keras import Model
@@ -101,6 +100,10 @@ class AlexNet:
         self.model.compile(optimizer='rmsprop',
                       loss='categorical_crossentropy',
                       metrics=['accuracy','TruePositive','TrueNegative','FalsePositive','FalseNegative'])
+        
+    # method for return the model
+    def return_model(self):
+        return self.Model
         
 """
 brief description:

@@ -102,9 +102,10 @@ class GoogLeNet:
               loss_weights=[1, 0.3, 0.3],
               metrics=['accuracy'])
         
-if __name__ == "__main__":
-    ob = GoogLeNet(2)
-    ob.make_model()
+    # method for return the model
+    def return_model(self):
+        return self.Model
+    
 """
 brief description:
     GoogLeNet won ILSVRC-2014 and is one of the most successful models of the earlier years of CNN.
