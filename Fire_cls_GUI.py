@@ -8,6 +8,8 @@ dataset used: https://www.kaggle.com/datasets/mohnishsaiprasad/forest-fire-image
 import os
 import numpy as np
 import random
+import time
+import math
 # for model
 import tensorflow as tf
 from tensorflow import keras
@@ -364,6 +366,7 @@ def import_image_from_ds(path_ds):
     list_dir_ds = os.listdir(path_ds)               # list of the folders that are in the DS, one folder for each class
     
     status_DS_text.set('Image DataSet: loading')    # notify the start of the import
+  
     # take the images and labels form DataSet
     for folder in list_dir_ds:                      # for each folder in DS
         classes.append(str(folder))                 # update classes
@@ -376,7 +379,7 @@ def import_image_from_ds(path_ds):
                 #check if the image is in the correct shape for the CNN (shape specified in the global variables)
                 if img.shape != (img_width, img_height, img_channel):       
                     dim = (img_height ,img_width)
-                    resize_img = cv2.resize(img, dim, interpolation= cv2.INTER_LINEAR)  # resize the image
+                    resize_img = cv2.resize(img, dim, interpolation= cv2.INTER_AREA)  # resize the image
                     total_image_ds.append(resize_img)                                   # add image to total_image_ds
                     total_labels_ds.append(index)                                       # add correlated label to total_lael_ds
                 else:
@@ -384,7 +387,7 @@ def import_image_from_ds(path_ds):
                     total_labels_ds.append(index)                                       # add correlated label to total_lael_ds
             else:
                 print("Errore nel caricare immagine ",filename)
-                    
+    
     # convert in np.array
     total_image_ds = np.array(total_image_ds)
     total_labels_ds = np.array(total_labels_ds)
@@ -651,8 +654,6 @@ def make_fit_model(chosen_model,number_epoch):
     
     eStop = EarlyStopping(patience = early_patience, verbose = 1, restore_best_weights = True, monitor='val_loss')
     
-    print("lunghezza train ", len(train_image), " lunghezza test ", len(test_image))
-    
     # train steps
     if (len(train_image) % batch_size) == 0:          # check if the division by batch_size produce rest
         train_step = len(train_image) / batch_size
@@ -661,11 +662,14 @@ def make_fit_model(chosen_model,number_epoch):
     
     # val steps
     if (len(test_image) % batch_size) == 0:          # check if the division by batch_size produce rest
-        val_step = len(test_image) / batch_size
+        val_step = math.floor(len(test_image) / batch_size)
     else:
-        val_step = (len(test_image) / batch_size) + 1
+        val_step = math.floor((len(test_image) / batch_size)) + 1
     
+    start_time = time.time()                            # start time for training
     history = network.fit(train_set,validation_data=val_set, epochs=epochs,steps_per_epoch=train_step, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
+    end_time = time.time()                              # end time for training
+    print(f"Time for training the model: {start_time - end_time} (s)")  # print time to train the model
     
     model_trained = True                                # update status variable
     status_model_text.set('Model: trained')             # notify the end of the process
