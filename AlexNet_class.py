@@ -100,7 +100,7 @@ class AlexNet:
         # compile rmsprop
         self.model.compile(optimizer='rmsprop',
                       loss='categorical_crossentropy',
-                      metrics=['accuracy','TruePositive','TrueNegative','FalsePositive','FalseNegative'])
+                      metrics=['accuracy'])
         
     # method for return the model
     def return_model(self):

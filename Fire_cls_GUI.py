@@ -20,6 +20,7 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import EarlyStopping
+#from tf.keras.metrics import TruePositive
 # for image visualization
 import matplotlib.pyplot as plt
 import cv2
@@ -650,31 +651,34 @@ def make_fit_model(chosen_model,number_epoch):
     
     # ---- fit the model -----
     
-    checkpoint = ModelCheckpoint(filepath = path_check_point_model+'/weight_seg_'+chosen_model+".hdf5", verbose = 1, save_best_only = True, monitor='val_loss', mode='min') # val_loss, min, val_categorical_accuracy, max
+    checkpoint = ModelCheckpoint(filepath = path_check_point_model+'/weight_seg_'+chosen_model+".hdf5", verbose = 1, save_best_only = True, monitor='loss', mode='min') # val_loss, min, val_categorical_accuracy, max
     
-    eStop = EarlyStopping(patience = early_patience, verbose = 1, restore_best_weights = True, monitor='val_loss')
+    eStop = EarlyStopping(patience = early_patience, verbose = 1, restore_best_weights = True, monitor='loss')
     
     # train steps
     if (len(train_image) % batch_size) == 0:          # check if the division by batch_size produce rest
-        train_step = len(train_image) / batch_size
+        train_step = math.floor(len(train_image) / batch_size)
     else:
-        train_step = (len(train_image) / batch_size) + 1
+        train_step = math.floor((len(train_image) / batch_size)) + 1
     
     # val steps
     if (len(test_image) % batch_size) == 0:          # check if the division by batch_size produce rest
         val_step = math.floor(len(test_image) / batch_size)
     else:
         val_step = math.floor((len(test_image) / batch_size)) + 1
+
+    print("Step train:", train_step, " val step: ",val_step)
     
     start_time = time.time()                            # start time for training
-    history = network.fit(train_set,validation_data=val_set, epochs=epochs,steps_per_epoch=train_step, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
+    #history = network.fit(train_set,validation_data=val_set, epochs=epochs,steps_per_epoch=train_step, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
+    history = network.fit(train_set,validation_data=val_set, epochs=epochs, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
     end_time = time.time()                              # end time for training
-    print(f"Time for training the model: {start_time - end_time} (s)")  # print time to train the model
+    print(f"Time for training the model: {end_time - start_time} (s)")  # print time to train the model
     
     model_trained = True                                # update status variable
     status_model_text.set('Model: trained')             # notify the end of the process
     
-    plot(history,"(Training set)")                      # visualize the value for the fit - history.history is a dictionary - call method for plot train result
+    plot(history.history,"(Training set)")              # visualize the value for the fit - history.history is a dictionary - call method for plot train result
     model_evaluate("test")                              # evaluate the model 
 
 # method for evaluate the model by the test set. 'param' specify if the evaluate hase to use test set or external test set ('',)
@@ -703,9 +707,10 @@ def model_evaluate(param):
             data_test = test_image_ext.astype('float32') / 255                              # normalization
             labels_test = to_categorical(test_label_ext,num_classes=len(classes))           # transform label in categorical format
     
+    print("Lunghezza del test set: ",len(data_test))
     test_loss, test_acc = network.evaluate(data_test, labels_test)                      # obtain loss and accuracy metrics
     dict_metrics = {'loss': test_loss, 'accuracy': test_acc}                            # create a dictionary contain the metrics
-    plot(dict_metrics,"(Test set)")                                                                  # plot the values obtained
+    plot(dict_metrics,"(Test set)")                                                     # plot the values obtained
     
 
 # check if there is a saved model and load it
@@ -761,8 +766,8 @@ def predict():
 # ------------------------------------ start: utility method ------------------------------------
 # method to plot accuracy and loss. arc is a dictionary with 'loss' and 'accuracy', explain_text is a text to explain better the title of the plot (e.g. (training set)) 
 def plot(arc,explain_text):
-    loss = arc.history["loss"]          # take loss values              
-    acc = arc.history["accuracy"]       # take accuracy values
+    loss = arc["loss"]          # take loss values              
+    acc = arc["accuracy"]       # take accuracy values
     # plot
     plt.figure()
     plt.plot(loss,'o-b')
@@ -798,6 +803,7 @@ if __name__ == "__main__":
     window.geometry(str(window_width)+'x'+str(window_height))
     window.resizable(False, False)
     
+    #GPU_check()                         #
     #set_background_image()          # set background image
     current_view_to_visualise()     # method for visualize the correct GUI
     
