@@ -449,7 +449,7 @@ def import_image_from_ext_test_ds(path_ds):
     
 # method for preprocessing and split the dataset
 def make_set_ds():
-    global test_image, test_label, train_image, train_label                             # global variables references
+    global test_image, test_label, train_image, train_label, val_img,val_label          # global variables references
     
     # ----- preprocessing and reshape ----
     lunghezza = len(total_image_ds)                                                     # take the len of the dataset
@@ -473,8 +473,11 @@ def generator_train():
     label_tensor = []                                           # tensor that contain the labels of one batch from the set
     img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
     label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
-    
-    rest = batch_size - (len(train_image) % batch_size)         # check if the division by batch_size produce rest
+    truncate = False
+    if not truncate:
+        rest = batch_size - (len(train_image) % batch_size)         # check if the division by batch_size produce rest
+    else:
+        rest = batch_size
     #print("lunghezza totale: ", len(total_train_image), " Batch_size: ",batch_size, " modulo: ",len(total_train_image) % batch_size, " mancante(rest): ",rest)
     for idx in range(len(train_image)):                         # organize the sample in batch
         # take one image and the corresponding labels
@@ -657,21 +660,21 @@ def make_fit_model(chosen_model,number_epoch):
     
     # train steps
     if (len(train_image) % batch_size) == 0:          # check if the division by batch_size produce rest
-        train_step = math.floor(len(train_image) / batch_size)
+        train_step = int(math.floor(len(train_image) / batch_size))
     else:
-        train_step = math.floor((len(train_image) / batch_size)) + 1
+        train_step = int(math.floor((len(train_image) / batch_size)) + 1)
     
     # val steps
     if (len(test_image) % batch_size) == 0:          # check if the division by batch_size produce rest
-        val_step = math.floor(len(test_image) / batch_size)
+        val_step = int(math.floor(len(test_image) / batch_size))
     else:
-        val_step = math.floor((len(test_image) / batch_size)) + 1
+        val_step = int(math.floor((len(test_image) / batch_size)) + 1)
 
-    print("Step train:", train_step, " val step: ",val_step)
+    print("Step train not truncate: ", train_step, " step train truncate: ", len(train_image) // batch_size , " val step: ",val_step)
     
     start_time = time.time()                            # start time for training
     #history = network.fit(train_set,validation_data=val_set, epochs=epochs,steps_per_epoch=train_step, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
-    history = network.fit(train_set,validation_data=val_set, epochs=epochs, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
+    history = network.fit(train_set,validation_data=val_set, epochs=epochs, callbacks = [checkpoint, eStop])     # fit model
     end_time = time.time()                              # end time for training
     print(f"Time for training the model: {end_time - start_time} (s)")  # print time to train the model
     
