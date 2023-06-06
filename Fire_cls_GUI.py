@@ -20,9 +20,10 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import EarlyStopping
-#from tf.keras.metrics import TruePositive
-# for image visualization
+# for plot
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+# for image visualization
 import cv2
 import PIL
 from PIL import ImageTk
@@ -114,6 +115,7 @@ path_dir_model = "Model"                        # folder in which there are save
 path_check_point_model = os.path.join(path_dir_model,"train_hdf5")  # folder in which there are saved the checkpoint for the model training
 # ---- model variables ----
 network = None                                  # contain the CNN model, default value is None
+truncate_set = False                            # variable which indicates whether the sets (train, test,val) must be truncate or not when divided to batch_size
 batch_size = 32                                 # batch size for training, this is the default value
 img_height = 224                                # height of the images in input to CNN
 img_width = 224                                 # width of the images in input to CNN
@@ -473,11 +475,12 @@ def generator_train():
     label_tensor = []                                           # tensor that contain the labels of one batch from the set
     img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
     label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
-    truncate = False
-    if not truncate:
-        rest = batch_size - (len(train_image) % batch_size)         # check if the division by batch_size produce rest
+    
+    if not truncate_set:                                        # check if it has to truncate or not the set
+        rest = batch_size - (len(train_image) % batch_size)     # check if the division by batch_size produce rest
+        #print("Training test rest: ",rest)
     else:
-        rest = batch_size
+        rest = batch_size                                       # set always truncated
     #print("lunghezza totale: ", len(total_train_image), " Batch_size: ",batch_size, " modulo: ",len(total_train_image) % batch_size, " mancante(rest): ",rest)
     for idx in range(len(train_image)):                         # organize the sample in batch
         # take one image and the corresponding labels
@@ -507,9 +510,8 @@ def generator_train():
                 for i in range(rest):
                     img_tensor.append(img_rest_tensor[i])
                     label_tensor.append(label_rest_tensor[i])
-                #print("Lunghezza del batch dopo aggiunta: ",len(img_tensor))
+                #print("Generator training set, arrivato a posizione: ",idx)
                 yield img_tensor, label_tensor                  # return the last batch
-            return
 
 # define generator function to do the validation set
 def generator_val():
@@ -519,7 +521,11 @@ def generator_val():
     img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
     label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
     
-    rest = batch_size - (len(val_img) % batch_size)             # check if the division by batch_size produce rest
+    if not truncate_set:                                        # check if it has to truncate or not the set
+        rest = batch_size - (len(val_img) % batch_size)         # check if the division by batch_size produce rest
+        #print("Training test rest: ",rest)
+    else:
+        rest = batch_size                                       # set always truncated
     
     for idx in range(len(val_img)):                             # organize the sample in batch
         # take one image and the corresponding mask
@@ -547,7 +553,7 @@ def generator_val():
                     img_tensor.append(img_rest_tensor[i])
                     label_tensor.append(label_rest_tensor[i])
                 yield img_tensor, label_tensor                  # return the last batch
-            return
+            print("Generator val set, arrivato a posizione: ",idx)
         
 # define generator function to do the test set
 def generator_test():
@@ -557,7 +563,11 @@ def generator_test():
     img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
     label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
     
-    rest = batch_size - (len(test_image) % batch_size)          # check if the division by batch_size produce rest
+    if not truncate_set:                                        # check if it has to truncate or not the set
+        rest = batch_size - (len(test_image) % batch_size)      # check if the division by batch_size produce rest
+        #print("Training test rest: ",rest)
+    else:
+        rest = batch_size                                       # set always truncated
     
     for idx in range(len(test_image)):                          # organize the sample in batch
         # extract one image and the corresponding mask
@@ -586,7 +596,7 @@ def generator_test():
                     img_tensor.append(img_rest_tensor[i])
                     label_tensor.append(label_rest_tensor[i])
                 yield img_tensor, label_tensor                  # return the last batch
-            return
+
 # ------------------ end: generetor function ------------------
 # ------------------------------------ end: methods for DS ------------------------------------
 
@@ -659,22 +669,25 @@ def make_fit_model(chosen_model,number_epoch):
     eStop = EarlyStopping(patience = early_patience, verbose = 1, restore_best_weights = True, monitor='val_loss')
     
     # train steps
-    if (len(train_image) % batch_size) == 0:          # check if the division by batch_size produce rest
+    if (len(train_image) % batch_size) == 0 or truncate_set:        # check if the division by batch_size produce rest
         train_step = int(math.floor(len(train_image) / batch_size))
     else:
         train_step = int(math.floor((len(train_image) / batch_size)) + 1)
     
     # val steps
-    if (len(test_image) % batch_size) == 0:          # check if the division by batch_size produce rest
-        val_step = int(math.floor(len(test_image) / batch_size))
+    if (len(val_img) % batch_size) == 0 or truncate_set:            # check if the division by batch_size produce rest
+        val_step = int(math.floor(len(val_img) / batch_size))
     else:
-        val_step = int(math.floor((len(test_image) / batch_size)) + 1)
+        val_step = int(math.floor((len(val_img) / batch_size)) + 1)
 
-    print("Step train not truncate: ", train_step, " step train truncate: ", len(train_image) // batch_size , " val step: ",val_step)
+    #print("Elem in training set: ",len(train_image)," Elem in val set: ", len(val_img)," Elem in test set: ",len(test_image))
+    #print("Step train not truncate: ", train_step, " step train truncate: ", len(train_image) // batch_size , " val step: ",val_step)
     
     start_time = time.time()                            # start time for training
     #history = network.fit(train_set,validation_data=val_set, epochs=epochs,steps_per_epoch=train_step, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
-    history = network.fit(train_set,validation_data=val_set, epochs=epochs, callbacks = [checkpoint, eStop])     # fit model
+    history = network.fit(train_set,validation_data=val_set, epochs=epochs, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
+    #history = network.fit(train_set,validation_data=val_set, epochs=epochs,steps_per_epoch=train_step, callbacks = [checkpoint, eStop])     # fit model
+    #history = network.fit(train_set,validation_data=val_set, epochs=epochs, callbacks = [checkpoint, eStop])     # fit model
     end_time = time.time()                              # end time for training
     print(f"Time for training the model: {end_time - start_time} (s)")  # print time to train the model
     
@@ -787,7 +800,8 @@ def plot_fit_result(arc,mode):
 
 # method to display a plot. 'title' is the tile of the plot, 'value_list' is a list of value to draw in the plot
 def plot(title,value_list):
-    plt.figure()
+    fig = plt.figure()
+    fig.gca().yaxis.set_major_locator(MaxNLocator(integer=True))    # force the label of  number of epochs to be integer
     plt.plot(value_list,'o-b')
     plt.title(str(title))               # plot title
     plt.xlabel("# Epochs")              # x axis title
