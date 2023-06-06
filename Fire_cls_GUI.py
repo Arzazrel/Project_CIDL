@@ -308,7 +308,7 @@ def btn_load_image():
             index = random.randint(0,len(total_image_ds)-1)     # chose a random index
             index_image_visualized = index      
             img = total_image_ds[index]                         # take random image from ds, the image at the index position
-            label = str(classes[total_labels_ds[index]])        # take the label of the chosen image    
+            label = str(classes[np.argmax(total_labels_ds[index])])        # take the label of the chosen image    
             label_image_text.set(str(label))                    # shows the label of the chosen image
             label_ext_image_text.set('')                        # clean the label of the image taken from the external test ds
         else:                                                   # no dataset loaded
@@ -318,8 +318,8 @@ def btn_load_image():
         index = random.randint(0,len(test_image)-1)             # chose a random index
         index_image_visualized = index
         img = test_image[index]*255                             # remember that the value of the image have been normalized
-        label = str(classes[test_label[index]])                 # take the label of the chosen image 
-        label_image_text.set('Label: '+label)                   # shows the label of the chosen image
+        label = str(classes[np.argmax(test_label[index])])      # take the label of the chosen image 
+        label_image_text.set(str(label))                        # shows the label of the chosen image
         label_ext_image_text.set('')                            # clean the label of the image taken from the external test ds
     
     if img is not None:
@@ -343,7 +343,7 @@ def btn_load_ext_image():
         index = random.randint(0,len(test_image_ext)-1)         # chose a random index
         index_image_visualized = index
         img = test_image_ext[index]*255                         # remember that the value of the image have been normalized
-        label = str(classes[test_label_ext[index]])             # take the label of the chosen image 
+        label = str(classes[np.argmax(test_label_ext[index])])             # take the label of the chosen image 
         label_ext_image_text.set(str(label))                    # shows the label of the chosen image
         label_image_text.set('')                                # clean the label of the image taken from the test ds
     
