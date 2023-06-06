@@ -654,9 +654,9 @@ def make_fit_model(chosen_model,number_epoch):
     
     # ---- fit the model -----
     
-    checkpoint = ModelCheckpoint(filepath = path_check_point_model+'/weight_seg_'+chosen_model+".hdf5", verbose = 1, save_best_only = True, monitor='loss', mode='min') # val_loss, min, val_categorical_accuracy, max
+    checkpoint = ModelCheckpoint(filepath = path_check_point_model+'/weight_seg_'+chosen_model+".hdf5", verbose = 1, save_best_only = True, monitor='val_loss', mode='min') # val_loss, min, val_categorical_accuracy, max
     
-    eStop = EarlyStopping(patience = early_patience, verbose = 1, restore_best_weights = True, monitor='loss')
+    eStop = EarlyStopping(patience = early_patience, verbose = 1, restore_best_weights = True, monitor='val_loss')
     
     # train steps
     if (len(train_image) % batch_size) == 0:          # check if the division by batch_size produce rest
@@ -681,7 +681,7 @@ def make_fit_model(chosen_model,number_epoch):
     model_trained = True                                # update status variable
     status_model_text.set('Model: trained')             # notify the end of the process
     
-    plot(history.history,"(Training set)")              # visualize the value for the fit - history.history is a dictionary - call method for plot train result
+    plot_fit_result(history.history,0)              # visualize the value for the fit - history.history is a dictionary - call method for plot train result
     model_evaluate("test")                              # evaluate the model 
 
 # method for evaluate the model by the test set. 'param' specify if the evaluate hase to use test set or external test set ('',)
@@ -713,7 +713,7 @@ def model_evaluate(param):
     print("Lunghezza del test set: ",len(data_test))
     test_loss, test_acc = network.evaluate(data_test, labels_test)                      # obtain loss and accuracy metrics
     dict_metrics = {'loss': test_loss, 'accuracy': test_acc}                            # create a dictionary contain the metrics
-    plot(dict_metrics,"(Test set)")                                                     # plot the values obtained
+    plot_fit_result(dict_metrics,1)                                                     # plot the values obtained
     
 
 # check if there is a saved model and load it
@@ -767,18 +767,31 @@ def predict():
 # ------------------------------------ end: methods for CNN model ------------------------------------
 
 # ------------------------------------ start: utility method ------------------------------------
-# method to plot accuracy and loss. arc is a dictionary with 'loss' and 'accuracy', explain_text is a text to explain better the title of the plot (e.g. (training set)) 
-def plot(arc,explain_text):
-    loss = arc["loss"]          # take loss values              
-    acc = arc["accuracy"]       # take accuracy values
-    # plot
+# method to plot accuracy and loss. arc is a dictionary with the results, 'mode' if is '0': there are fit results, if is '1': there are evaluation results
+def plot_fit_result(arc,mode):
+    result_dict = {}                    # dict that will contain the results to plot with the correct label/title
+    # check what results there are
+    if mode == 0:                       # method called with fit results
+        result_dict["loss (training set)"] = arc["loss"]                    # take loss values (training set)
+        result_dict["accuracy (taining set)"] = arc["accuracy"]             # take accuracy values (training set)
+        if arc.get("val_loss") is not None:                         # check if there are result of validation set
+            result_dict["loss (validation set)"] = arc["val_loss"]          # take loss values (validation set)
+            result_dict["accuracy (validation set)"] = arc["val_accuracy"]  # take accuracy values (validation set)
+    elif mode == 1:                     # method called with evaluate results
+        result_dict["loss (test set)"] = arc["loss"]                        # take loss values (test set)
+        result_dict["accuracy (test set)"] = arc["accuracy"]                # take accuracy values (test set)
+    # plot the results
+    for k,v in result_dict.items():
+        #print("chiave: ", k," value: ",v)
+        plot(k,v)
+
+# method to display a plot. 'title' is the tile of the plot, 'value_list' is a list of value to draw in the plot
+def plot(title,value_list):
     plt.figure()
-    plt.plot(loss,'o-b')
-    plt.title('Loss '+str(explain_text))
-    plt.show()
-    plt.figure()
-    plt.plot(acc,'o-b')
-    plt.title('Accuracy '+str(explain_text))
+    plt.plot(value_list,'o-b')
+    plt.title(str(title))               # plot title
+    plt.xlabel("# Epochs")              # x axis title
+    plt.ylabel("Value")                 # y axis title
     plt.show()
     
 # method to check GPU device avaible and setting
