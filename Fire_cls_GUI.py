@@ -84,6 +84,8 @@ er_eval_without_model_text = "Before evaluate the model you must make and fit or
 er_no_model_specified_text = "Please chose a CNN model or load one before fit CNN model."       # error text that occur when user want to make the model without chose one
 er_predict_text = "Before predict you must train model and load an image."              # error text that occur when user want to predict without take image or train model
 er_format_epoch_text = "Error format in the Number of epochs input, you must insert a positive number, please retry."   # error text that occur when user insert a incorrect number of epochs format
+er_format_batch_size_text = "Error format in the Number of batch_size input, you must insert a positive number, please retry."   # error text that occur when user insert a incorrect number of batch_size format
+er_format_early_text = "Error format in the Number of early patience input, you must insert a positive number, please retry."   # error text that occur when user insert a incorrect number of early patience format
 
 # ---- status variables ----
 model_trained = False                           # variable that show if there is a model trained
@@ -109,7 +111,7 @@ label_ext_image_text = StringVar()              # text that shows the groundtrut
 label_ext_image_text.set('')                    # default value
 
 # ---- path variables ----
-path_dir_ds = "Dataset\Train_DS"                # folder in which there are the image ds for training
+path_dir_ds = os.path.join("Dataset","Train_DS")# folder in which there are the image ds for training
 path_dir_test_ds = "Dataset\Test_DS"            # folder in which there are the image ds for testing
 path_dir_model = "Model"                        # folder in which there are saved the CNN model
 path_check_point_model = os.path.join(path_dir_model,"train_hdf5")  # folder in which there are saved the checkpoint for the model training
@@ -178,44 +180,56 @@ def current_view_to_visualise():
     
     # -- start: row 0 --
     btn_load_ds = Button(top_frame, text="Load image DS", command=btn_load_ds_method)   # button to load the whole dataset
-    btn_load_ds.grid(row=0, column=0, sticky="W", padx=10, pady=10)
+    btn_load_ds.grid(row=0, column=0, sticky="W", padx=5, pady=10)
     
+    model_label = Label(top_frame, textvariable=status_model_text)                  # label for the status of DS (missing,loading,loaded)
+    model_label.grid(row=0, column=6, sticky="W", padx=5, pady=10)  
+
     dataset_label = Label(top_frame, textvariable=status_DS_text)           # label for the status of DS (missing,loading,loaded)
-    dataset_label.grid(row=0, column=5, sticky="W", padx=10, pady=10)    
+    dataset_label.grid(row=0, column=7, sticky="W", padx=5, pady=10)    
     # -- end: row 0 --
     
     # -- start: row 1 --
     name_model_label = Label(top_frame, text="CNN model name: ")                # label for the name of the CNN model to load or to save
-    name_model_label.grid(row=1, column=0, sticky="W", padx=10, pady=10) 
+    name_model_label.grid(row=1, column=0, sticky="W", padx=5, pady=10) 
     
-    name_model_input = Entry(top_frame, width=20)                                     # entry for the CNN model name
-    name_model_input.grid(row=1, column=1, sticky="WE", padx=10)
+    name_model_input = Entry(top_frame, width=15)                                     # entry for the CNN model name
+    name_model_input.grid(row=1, column=1, sticky="WE", padx=5)
     
     btn_load_model = Button(top_frame, text="Load CNN model", command=lambda: load_saved_model(name_model_input.get()))   # button to load the CNN model
-    btn_load_model.grid(row=1, column=2, sticky="W", padx=10, pady=10)
+    btn_load_model.grid(row=1, column=2, sticky="W", padx=5, pady=10)
     
     btn_save_model = Button(top_frame, text="Save CNN model", command=lambda: save_model(name_model_input.get()))   # button to save the CNN model
-    btn_save_model.grid(row=1, column=3, sticky="W", padx=10, pady=10)
+    btn_save_model.grid(row=1, column=3, sticky="W", padx=5, pady=10)
+
+    btn_fit_model = Button(top_frame, text="Fit CNN model", command=lambda: make_fit_model(CNN_menu_text.get(),number_epochs_input.get(),batch_size_input.get(),early_stopping_input.get()))      # button to fit CNN model
+    btn_fit_model.grid(row=1, column=7, sticky="W", padx=5, pady=10)
     # -- end: row 1 --
     
     # -- start: row 2 --
-    name_model_label = Label(top_frame, text="Select the CNN model that you want:") # label to explain the choice of CNN models
-    name_model_label.grid(row=2, column=0, sticky="W", padx=10, pady=10) 
+    name_model_label = Label(top_frame, text="Select CNN model:")                   # label to explain the choice of CNN models
+    name_model_label.grid(row=2, column=0, sticky="W", padx=5, pady=10) 
     
     CNN_menu = OptionMenu(top_frame, CNN_menu_text,*CNN_model_text)                 # creating select menu for CNN model
     CNN_menu.grid(row=2, column=1,padx=10)
     
     epoch_label = Label(top_frame, text="Number of epoch:")                         # label to explain the number of epoch
-    epoch_label.grid(row=2, column=2, sticky="W", padx=10, pady=10) 
+    epoch_label.grid(row=2, column=2, sticky="W", padx=5, pady=10) 
     
-    number_epochs_input = Entry(top_frame, width=15)                                             # entry for the number of epochs
-    number_epochs_input.grid(row=2, column=3, sticky="WE", padx=10)
+    number_epochs_input = Entry(top_frame, width=10)                                             # entry for the number of epochs
+    number_epochs_input.grid(row=2, column=3, sticky="WE", padx=5)
+
+    batch_size_label = Label(top_frame, text="Batch size:")                         # label to explain the batch size
+    batch_size_label.grid(row=2, column=4, sticky="W", padx=5, pady=10) 
     
-    btn_fit_model = Button(top_frame, text="Fit CNN model", command=lambda: make_fit_model(CNN_menu_text.get(),number_epochs_input.get()))      # button to fit CNN model
-    btn_fit_model.grid(row=2, column=4, sticky="W", padx=10, pady=10)
+    batch_size_input = Entry(top_frame, width=10)                                             # entry for the number batch size
+    batch_size_input.grid(row=2, column=5, sticky="WE", padx=5)
     
-    model_label = Label(top_frame, textvariable=status_model_text)           # label for the status of DS (missing,loading,loaded)
-    model_label.grid(row=2, column=5, sticky="W", padx=10, pady=10)  
+    early_stopping_label = Label(top_frame, text="Early stopping:")                         # label to explain the early patience
+    early_stopping_label.grid(row=2, column=6, sticky="W", padx=5, pady=10) 
+    
+    early_stopping_input = Entry(top_frame, width=10)                                             # entry for the number of early patience
+    early_stopping_input.grid(row=2, column=7, sticky="WE", padx=5)
     # -- end: row 2 --
     # ---- end: top frame ----
     
@@ -601,9 +615,59 @@ def generator_test():
 # ------------------------------------ end: methods for DS ------------------------------------
 
 # ------------------------------------ start: methods for CNN model ------------------------------------
+# method for check the fit parameter insert by user. return 'True' whether the parameter are correct, 'False' is the parameter aren't correct
+def check_fit_param(number_epoch,num_batch_size,num_early_patience):
+    global epochs, batch_size, early_patience           # global variables references
+
+    if number_epoch:                                    # control check for number of epochs of the train   
+        if number_epoch.isnumeric():                    # check if the string is a number or not, this method doesn't recongnize the negative number but it's okay for our case, number of epochs must be positive number
+            try:
+                int_numb_epoch = int(number_epoch)      # convert to int if is possible
+            except:
+                error_text.set(er_format_epoch_text)    # update error text  
+                return False
+            epochs = int_numb_epoch                     # upate the value of batch_size
+            #print("nuovo number of epoch: ",epochs)
+        else:                                           
+            error_text.set(er_format_epoch_text)        # update error text 
+            return False
+    # if user don't insert a value for the number of epochs the program will use a default value
+
+    if num_batch_size:                                    # control check for batch size   
+        if num_batch_size.isnumeric():                    # check if the string is a number or not, this method doesn't recongnize the negative number but it's okay for our case, number of epochs must be positive number
+            try:
+                int_num_batch_size = int(num_batch_size)  # convert to int if is possible
+            except:
+                error_text.set(er_format_batch_size_text) # update error text  
+                return False
+            batch_size = int_num_batch_size               # upate the value of epochs
+            #print("nuovo batch_size: ",batch_size)
+        else:                                           
+            error_text.set(er_format_batch_size_text)     # update error text 
+            return False
+    # if user don't insert a value for the batch_size the program will use a default value
+
+    if num_early_patience:                                    # control check for batch size   
+        if num_early_patience.isnumeric():                    # check if the string is a number or not, this method doesn't recongnize the negative number but it's okay for our case, number of epochs must be positive number
+            try:
+                int_num_early_patience = int(num_early_patience)  # convert to int if is possible
+            except:
+                error_text.set(er_format_early_text)          # update error text  
+                return False
+            early_patience = int_num_early_patience           # upate the value of epochs
+            #print("nuovo early: ",early_patience)
+        else:                                           
+            error_text.set(er_format_early_text)              # update error text 
+            return False
+    # if user don't insert a value for the early patience the program will use a default value
+
+    return True                                         # all parameter are ok
+
 # method to create and fit model, 'chosen_model' indicate the model chosen by user by the menu tillbar
-def make_fit_model(chosen_model,number_epoch):
-    global model_trained, test_image, test_label, train_image, train_label, network, epochs  # global variables references
+# 'number_epoch' is number of epoch insert by user , 'num_batch_size' is the batch size insert by user 
+# 'early_patience' is the patience for early stopping insert b user
+def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
+    global model_trained, test_image, test_label, train_image, train_label, network, epochs, batch_size, early_patience  # global variables references
     
     error_text.set('')                                  # clear error text
     if len(total_image_ds) == 0:                        # control check
@@ -612,19 +676,10 @@ def make_fit_model(chosen_model,number_epoch):
     
     if len(test_image) == 0 or len(train_image) == 0:   # check whether the training and test set have already been made
         make_set_ds()                                   # split and create the sets
-        
-    if number_epoch:                                    # control check for number of epochs of the train   
-        if number_epoch.isnumeric():                    # check if the string is a number or not, this method doesn't recongnize the negative number but it's okay for our case, number of epochs must be positive number
-            try:
-                int_numb_epoch = int(number_epoch)      # convert to int if is possible
-            except:
-                error_text.set(er_format_epoch_text)    # update error text  
-                return
-            epochs = int_numb_epoch                     # upate the value of epochs
-        else:                                           
-            error_text.set(er_format_epoch_text)        # update error text 
-    # if user don't insert a value for the number of epochs the program will use a default value
     
+    if not check_fit_param(number_epoch,num_batch_size,num_early_patience): # check parameters
+        return                                          # at least one parameter isn't correct
+
     status_model_text.set('Model: working')             # notify the start of the process
     # ---- make the model -----
     if not model_trained:                                   # check if there is a ready model or not 
