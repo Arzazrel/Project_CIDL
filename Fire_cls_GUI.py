@@ -118,6 +118,8 @@ path_check_point_model = os.path.join(path_dir_model,"train_hdf5")  # folder in 
 # ---- model variables ----
 network = None                                  # contain the CNN model, default value is None
 truncate_set = False                            # variable which indicates whether the sets (train, test,val) must be truncate or not when divided to batch_size
+# indicate the param of the past model if all are the same of the actual make_model request the program doesn't make again the model
+past_param_model = { "type_model": None, "epochs": None, "batch_size": None, "early_patience": None}                           
 batch_size = 32                                 # batch size for training, this is the default value
 img_height = 224                                # height of the images in input to CNN
 img_width = 224                                 # width of the images in input to CNN
@@ -667,8 +669,9 @@ def check_fit_param(number_epoch,num_batch_size,num_early_patience):
 # 'number_epoch' is number of epoch insert by user , 'num_batch_size' is the batch size insert by user 
 # 'early_patience' is the patience for early stopping insert b user
 def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
-    global model_trained, test_image, test_label, train_image, train_label, network, epochs, batch_size, early_patience  # global variables references
-    
+    global model_trained, test_image, test_label, train_image, train_label, network, epochs, batch_size, early_patience, past_param_model  # global variables references
+    make_model = True                                   # var that indicate if this call of method has to make and fit CNN model
+
     error_text.set('')                                  # clear error text
     if len(total_image_ds) == 0:                        # control check
         error_text.set(er_train_without_ds_text)        # update error text
@@ -682,7 +685,25 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
 
     status_model_text.set('Model: working')             # notify the start of the process
     # ---- make the model -----
-    if not model_trained:                                   # check if there is a ready model or not 
+    if not model_trained:                   # check if there is a ready model or not 
+        if chosen_model == "None":                          # check if the CNN model has been selected by user
+            error_text.set(er_no_model_specified_text)      # update error text
+            return                                          # user must specify a template
+        else:
+            print("Prima volta che faccio modello")
+            # save the param for next call of this method
+            past_param_model["type_model"] = chosen_model         # save type of the model
+            past_param_model["epochs"] = epochs                   # save type of the model
+            past_param_model["batch_size"] = batch_size           # save type of the model
+            past_param_model["early_patience"] = early_patience   # save type of the model
+
+            make_model = True                               # has to make model, set variable
+    else:                                   # there is a past model, verify if the parameters are the same of this call
+        print("Modello già fatto controllo")
+        make_model = not check_past_model(chosen_model)           # set variable
+
+    print("Check past: ", check_past_model(chosen_model), " Make model: ",make_model)
+    if make_model:                          # make and fit another model
         # check what type of model the user want to make and fit, user can chose form this option: 'None','AlexNet','GoogleNet','Ifrit'
         if chosen_model == "None":
             error_text.set(er_no_model_specified_text)      # update error text
@@ -696,7 +717,10 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
             GLNet_Model = GLNet.GoogLeNet(len(classes))     # create an instance of the AlexNet class
             GLNet_Model.make_model()                        # make model (GoogLeNet architecture)
             GLNet_Model.compile_model()                     # compile model
+            GLNet_Model.take_ds( train_image, train_label , val_img,val_label ,truncate_set,batch_size)
+            GLNet_Model.fit_model(epochs)
             network = GLNet_Model.return_model()            # return model
+            return
         elif chosen_model == "Ifrit":                       
             Ifrit_Model = IfritNet.IfriNet(len(classes))    # create an instance of the IfriNet class
             Ifrit_Model.make_model(1)                       # make model (IfriNet 1 architecture)
@@ -716,7 +740,7 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
     test_set = tf.data.Dataset.from_generator(generator_test, 
                                              output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
                                                                tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
-    
+
     # ---- fit the model -----
     
     checkpoint = ModelCheckpoint(filepath = path_check_point_model+'/weight_seg_'+chosen_model+".hdf5", verbose = 1, save_best_only = True, monitor='val_loss', mode='min') # val_loss, min, val_categorical_accuracy, max
@@ -740,9 +764,9 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
     
     start_time = time.time()                            # start time for training
     #history = network.fit(train_set,validation_data=val_set, epochs=epochs,steps_per_epoch=train_step, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
-    history = network.fit(train_set,validation_data=val_set, epochs=epochs, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
+    #history = network.fit(train_set,validation_data=val_set, epochs=epochs, validation_steps = val_step, callbacks = [checkpoint, eStop])     # fit model
     #history = network.fit(train_set,validation_data=val_set, epochs=epochs,steps_per_epoch=train_step, callbacks = [checkpoint, eStop])     # fit model
-    #history = network.fit(train_set,validation_data=val_set, epochs=epochs, callbacks = [checkpoint, eStop])     # fit model
+    history = network.fit(train_set,validation_data=val_set, epochs=epochs, callbacks = [checkpoint, eStop])     # fit model
     end_time = time.time()                              # end time for training
     print(f"Time for training the model: {end_time - start_time} (s)")  # print time to train the model
     
@@ -835,6 +859,17 @@ def predict():
 # ------------------------------------ end: methods for CNN model ------------------------------------
 
 # ------------------------------------ start: utility method ------------------------------------
+# method that verify if the past model has the same parameters of the actual model call
+def check_past_model(type_model):
+    global past_param_model
+
+    if past_param_model["type_model"] == type_model:          # check type of the model
+        if past_param_model["epochs"] == epochs:                  # save type of the model
+            if past_param_model["batch_size"] == batch_size:          # save type of the model
+                if past_param_model["early_patience"] == early_patience:   # save type of the model
+                    return True                                            # they are the same
+    return False                                    # they aren't the same
+
 # method to plot accuracy and loss. arc is a dictionary with the results, 'mode' if is '0': there are fit results, if is '1': there are evaluation results
 def plot_fit_result(arc,mode):
     result_dict = {}                    # dict that will contain the results to plot with the correct label/title
