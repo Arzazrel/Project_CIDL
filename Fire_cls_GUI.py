@@ -163,7 +163,7 @@ def current_view_to_visualise():
     cleanGUI()                              # clean all element of the GUI
     # create variable for the GUI elements
     explainText = "Welcom to Ifrit.\nA fire Detection CNN."
-    CNN_model_text = ['None','AlexNet','GoogleNet','Ifrit']
+    CNN_model_text = ['None','AlexNet','GoogleNet','Ifrit_1','Ifrit_2']
 
     # create the GUI elements and place them 
     # ---- start: explain_frame ----
@@ -569,7 +569,6 @@ def generator_val():
                     img_tensor.append(img_rest_tensor[i])
                     label_tensor.append(label_rest_tensor[i])
                 yield img_tensor, label_tensor                  # return the last batch
-            print("Generator val set, arrivato a posizione: ",idx)
         
 # define generator function to do the test set
 def generator_test():
@@ -721,9 +720,14 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
             GLNet_Model.fit_model(epochs)
             network = GLNet_Model.return_model()            # return model
             return
-        elif chosen_model == "Ifrit":                       
+        elif chosen_model == "Ifrit_1":                    
             Ifrit_Model = IfritNet.IfriNet(len(classes))    # create an instance of the IfriNet class
             Ifrit_Model.make_model(1)                       # make model (IfriNet 1 architecture)
+            Ifrit_Model.compile_model()                     # compile model
+            network = Ifrit_Model.return_model()            # return model
+        elif chosen_model == "Ifrit_2":                       
+            Ifrit_Model = IfritNet.IfriNet(len(classes))    # create an instance of the IfriNet class
+            Ifrit_Model.make_model(2)                       # make model (IfriNet 1 architecture)
             Ifrit_Model.compile_model()                     # compile model
             network = Ifrit_Model.return_model()            # return model
     
