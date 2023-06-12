@@ -33,14 +33,13 @@ list_dir_ds = os.listdir(path_ds)               # list of the folders that are i
 # slide the images and labels form DataSet
 for folder in list_dir_ds:                      # for each folder in DS
     if classes.get(str(folder)) is None:        # check if the classes is already registered
-        classes[str(folder)] = 1                # set counter equal 0
-    else:
-        classes[str(folder)] += 1               # update counter
+        classes[str(folder)] = 0                # set counter equal 0
     
     p = os.path.join(path_ds,folder)        # path of each folder
     
     for filename in os.listdir(p):                      # for each images on the current folder
         img_number +=1                                  # update images counter
+        classes[str(folder)] += 1                       # update images in classes counter
         # I get the image format, I assume that there are no dots in the name of the images
         split_name = str(filename).split('.')           # split the filename
         format_name = split_name[-1]                    # get the format
@@ -76,8 +75,14 @@ for folder in list_dir_ds:                      # for each folder in DS
 # Dataset characteristics output
 print("The dataset has " , img_number, " images.")                                      # total number of images in dataset
 print("The number of classes are ",len(classes.keys()), ". ", list(classes.keys()))     # number of classes and name of each class
+print("List of the classes and number of related images for each one")
+sorted_class_dict = dict(sorted(classes.items(), key=lambda x: x[1], reverse=True))     # sort the classes dictionary. reverse = true the biggest class will be the first                                                                            # initialize the counter
+for k,v in sorted_class_dict.items():                                                   # for to slide the sorted dict
+    print(k, ': ', v)                                                                   # print key and value       
+
 if len(corrupt_images) != 0:                                                            #check if there are corrupted images
     print("There are ", len(corrupt_images)," corrupted images.\n",corrupt_images)
+
 # number of shapes and images number for each shape
 print("The number of different images shapes are ",len(shape_dict.keys()))
 #for k,v in shape_dict.items():                                                          # for to see all images shapes
@@ -90,6 +95,7 @@ for k,v in sorted_shape_dict.items():                                           
         break
     print(k, ': ', v)                                                                   # print key and value
     count +=1                                                                           # update counter   
+
 # number of format and images number for each format
 print("The number of different images format are ",len(format_dict.keys()))
 #for k,v in format_dict.items():                                                         # for to see all images format
