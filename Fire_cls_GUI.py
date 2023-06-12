@@ -86,11 +86,14 @@ er_predict_text = "Before predict you must train model and load an image."      
 er_format_epoch_text = "Error format in the Number of epochs input, you must insert a positive number, please retry."   # error text that occur when user insert a incorrect number of epochs format
 er_format_batch_size_text = "Error format in the Number of batch_size input, you must insert a positive number, please retry."   # error text that occur when user insert a incorrect number of batch_size format
 er_format_early_text = "Error format in the Number of early patience input, you must insert a positive number, please retry."   # error text that occur when user insert a incorrect number of early patience format
+er_down_ds_text = "Dataset downloading already started, please wait."                   # error text that occur when user want to download the dataset when the program is downloading ds
 
 # ---- status variables ----
 model_trained = False                           # variable that show if there is a model trained
 image_to_visualize = None                       # image that will be visualized in the GUI
 index_image_visualized = -1                     # index of the image visualized in GUI, default value is -1
+ds_downloading = False                          # indicate if the pogram is downloading the dataset
+ext_ds_downloading = False                      # indicate if the pogram is downloading the extern dataset
 status_DS_text = StringVar()                            # text that shows the state of the dataset (missing, loading, loaded)
 status_DS_text.set('Image DataSet: missing')            # the default value is 'missing'
 status_ext_test_DS_text = StringVar()                   # text that shows the state of the extern test dataset (missing, loading, loaded)
@@ -376,14 +379,26 @@ def btn_load_ext_image():
 # ------------------------------------ start: methods for DS ------------------------------------
 # activate a thread to load the ds, in this way the GUI will not be blocked
 def btn_load_ds_method():
-    t = Thread(target=import_image_from_ds, args=(path_dir_ds,))
-    t.start()
+    global ds_downloading                       # refer to global variables
+    error_text.set('')                          # cleans error text
+    if not ds_downloading:                      # check if program is already downloading the dataset
+        ds_downloading = True                   # set control variable
+        t = Thread(target=import_image_from_ds, args=(path_dir_ds,))
+        t.start()                               # starts thread for import dataset
+    else:
+        error_text.set(er_down_ds_text)         # update error text 
+        
     
 # method for import the whole dataset, path_ds is the path of the dataset to load. -- P.S. for more detail please read note 0 (at the end of the file)  
 def import_image_from_ds(path_ds):
-    global total_image_ds, total_labels_ds          # refer to global variables
+    global total_image_ds, total_labels_ds,ds_downloading   # refer to global variables
     list_dir_ds = os.listdir(path_ds)               # list of the folders that are in the DS, one folder for each class
     
+    # check if the total ds is already loaded
+    if len(total_image_ds) != 0:                    # cleans the arrays to allow the dataset to be reloaded
+        total_image_ds = []                 
+        total_labels_ds = []                
+
     status_DS_text.set('Image DataSet: loading')    # notify the start of the import
   
     # take the images and labels form DataSet
@@ -417,17 +432,25 @@ def import_image_from_ds(path_ds):
     print("Requied memory for images ds: ",total_image_ds.size * total_image_ds.itemsize / 10**9," GB")
     
     status_DS_text.set('Image DataSet: downloaded')             # notify the end of the process
+    error_text.set('')                                          # cleans error text
+    ds_downloading = False                                      # reset control variable
     
 # activate a thread to load the extern test ds, in this way the GUI will not be blocked
 def btn_load_ext_ds_method():
-    t = Thread(target=import_image_from_ext_test_ds, args=(path_dir_test_ds,))
-    t.start()
+    global ext_ds_downloading                   # refer to global variables
+    error_text.set('')                          # cleans error text
+    if not ext_ds_downloading:                  # check if program is already downloading the dataset
+        ext_ds_downloading = True               # set control variable
+        t = Thread(target=import_image_from_ext_test_ds, args=(path_dir_test_ds,))
+        t.start()                               # starts thread for import dataset
+    else:
+        error_text.set(er_down_ds_text)         # update error text 
     
 # method for import the whole test dataset, path_ds is the path of the dataset to load. -- P.S. same detail of the 'import_image_from_ds' method in Note 0
 def import_image_from_ext_test_ds(path_ds):
-    global test_image_ext, test_label_ext               # refer to global variables
+    global test_image_ext, test_label_ext,ext_ds_downloading    # refer to global variables
     image_ds = []
-    labels_ds = []                       # local variables
+    labels_ds = []                                      # local variables
     list_dir_ds = os.listdir(path_ds)                   # list of the folders that are in the DS, one folder for each class
     error_text.set('')                                  # clear error text
     
@@ -463,7 +486,9 @@ def import_image_from_ext_test_ds(path_ds):
     print("test_label_ext",len(test_label_ext), test_label_ext.shape)
     print("Requied memory for images ds: ",test_image_ext.size * test_image_ext.itemsize / 10**9," GB")
     
-    status_ext_test_DS_text.set('Extern test DS: downloaded')             # notify the end of the process
+    status_ext_test_DS_text.set('Extern test DS: downloaded')       # notify the end of the process
+    error_text.set('')                                              # cleans error text
+    ext_ds_downloading = False                                      # reset control variable
     
 # method for preprocessing and split the dataset
 def make_set_ds():
@@ -671,7 +696,7 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
     global model_trained, test_image, test_label, train_image, train_label, network, epochs, batch_size, early_patience, past_param_model  # global variables references
     make_model = True                                   # var that indicate if this call of method has to make and fit CNN model
 
-    error_text.set('')                                  # clear error text
+    error_text.set('')                                  # cleans error text
     if len(total_image_ds) == 0:                        # control check
         error_text.set(er_train_without_ds_text)        # update error text
         return
@@ -806,7 +831,6 @@ def model_evaluate(param):
             data_test = test_image_ext.astype('float32') / 255                              # normalization
             labels_test = to_categorical(test_label_ext,num_classes=len(classes))           # transform label in categorical format
     
-    print("Lunghezza del test set: ",len(data_test))
     test_loss, test_acc = network.evaluate(data_test, labels_test)                      # obtain loss and accuracy metrics
     dict_metrics = {'loss': test_loss, 'accuracy': test_acc}                            # create a dictionary contain the metrics
     plot_fit_result(dict_metrics,1)                                                     # plot the values obtained
