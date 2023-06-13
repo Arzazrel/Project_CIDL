@@ -1,0 +1,73 @@
+------------------------------------- AlexNet -------------------------------------
+---- ---- ---- ---- Old dataset ----  ---- ---- ---- 
+---- ---- gtx 1080 ---- ---- 
+- epochs = 100, early stopping = 10, stop = epoch 18 , batch_size = 32 , acc = 96%, loss = 0.1, val_acc = 94%, val_loss = 0.4, Time training: 145.55644845962524 (s) 
+- epochs = 100, early stopping = 15, stop = epoch 25 , batch_size = 32 , acc = 98%, loss = 0.1, val_acc = 94%, val_loss = 0.16,Time training: 255.94034361839294 (s) 
+- epochs = 100, early stopping = 10, stop = epoch 27 , batch_size = 64 , acc = 98%, loss = 0.1, val_acc = 93%, val_loss = 0.8,Time training: 225.54511666297913 (s)
+- epochs = 100, early stopping = 15, stop = epoch 33 , batch_size = 64 , acc = 98%, loss = 0.1, val_acc = 95%, val_loss = 0.3,Time training: 320.26628398895264 (s) 
+- epochs = 100, early stopping = 20, stop = epoch 23 , batch_size = 32 , acc = 99%, loss = 0.04, val_acc = 94%, val_loss = 1,Time training: 221.2005066871643 (s)
+- epochs = 100, early stopping = 20, stop = epoch 25 , batch_size = 64 , acc = 99%, loss = 0.02, val_acc = 88%, val_loss = 0.8,Time training: 207.17956161499023 (s)
+---- ---- rtx 3060 ---- ---- 
+---- ---- ---- ---- new dataset ----  ---- ---- ----
+---- ---- gtx 1080 ---- ---- 
+
+---- ---- rtx 3060 ---- ---- 
+
+------------------------------------- GoogLeNet -------------------------------------
+---- ---- ---- ---- Old dataset ----  ---- ---- ---- 
+---- ---- gtx 1080 ---- ---- 
+- epochs = 100, early stopping = 10, stop = epoch  , batch_size = 32 , acc = %, loss = , val_acc = %, val_loss = , Time training:  (s) 
+- epochs = 100, early stopping = 10, stop = epoch  , batch_size = 32 , acc = %, loss = , val_acc = %, val_loss = , Time training:  (s)
+---- ---- rtx 3060 ---- ---- 
+---- ---- ---- ---- new dataset ----  ---- ---- ----
+---- ---- gtx 1080 ---- ---- 
+
+---- ---- rtx 3060 ---- ---- 
+
+------------------------------------- IfritNet_1 -------------------------------------
+---- ---- ---- ---- Old dataset ----  ---- ---- ---- 
+---- ---- gtx 1080 ---- ---- 
+- epochs = 100, early stopping = 10, stop = epoch 13 , batch_size = 32 , acc = 97%, loss = 0.06, val_acc = 92%, val_loss = 0.17, Time training: 82.00567770004272 (s) 
+- epochs = 100, early stopping = 15, stop = epoch 35 , batch_size = 32 , acc = 98%, loss = 0.04, val_acc = 95.8%, val_loss = 0.17, Time training: 261.9945459365845 (s)
+- epochs = 100, early stopping = 20, stop = epoch 47 , batch_size = 32 , acc = 98%, loss = 0.036, val_acc = 96%, val_loss = 0.16,Time training: 276.994503736496 (s)
+- epochs = 100, early stopping = 10, stop = epoch 21 , batch_size = 64 , acc = 97%, loss = 0.06, val_acc = 94%, val_loss = 0.13,Time training: 121.43753790855408 (s)
+- epochs = 100, early stopping = 15, stop = epoch 32 , batch_size = 64 , acc = 98%, loss = 0.04, val_acc = 95%, val_loss = 0.15,Time training: 185.37452745437622 (s) 
+- epochs = 100, early stopping = 20, stop = epoch 42 , batch_size = 64 , acc = 98%, loss = 0.03, val_acc = 95.7%, val_loss = 0.17,Time training: 238.02848291397095 (s)
+---- ---- rtx 3060 ---- ---- 
+---- ---- ---- ---- new dataset ----  ---- ---- ----
+---- ---- gtx 1080 ---- ---- 
+
+---- ---- rtx 3060 ---- ---- 
+
+------------------------------------- IfritNet_2 -------------------------------------
+---- ---- ---- ---- Old dataset ----  ---- ---- ---- 
+---- ---- gtx 1080 ---- ---- 
+- epochs = 100, early stopping = 10, stop = epoch 21 , batch_size = 32 , acc = 97%, loss = 0.1, val_acc = 91%, val_loss = 0.6, Time training: 184.40916299819946 (s) 
+- epochs = 100, early stopping = 15, stop = epoch 30 , batch_size = 32 , acc = 98%, loss = 0.03, val_acc = 94%, val_loss = 0.16, Time training: 190.25988912582397 (s)
+- epochs = 100, early stopping = 20, stop = epoch 33 , batch_size = 32 , acc = 97%, loss = 0.07, val_acc = 94%, val_loss = 0.18,Time training: 289.9473407268524 (s)
+- epochs = 100, early stopping = 10, stop = epoch 18 , batch_size = 64 , acc = 96%, loss = 0.09, val_acc = 94%, val_loss = 0.17,Time training: 126.48190665245056 (s)
+- epochs = 100, early stopping = 15, stop = epoch 23 , batch_size = 64 , acc = 96%, loss = 0.08, val_acc = 95%, val_loss = 0.15,Time training: 117.6722731590271 (s) 
+- epochs = 100, early stopping = 20, stop = epoch 26 , batch_size = 64 , acc = 96%, loss = 0.1, val_acc = 92%, val_loss = 0.2,Time training: 159.85188508033752 (s)
+---- ---- rtx 3060 ---- ---- 
+---- ---- ---- ---- new dataset ----  ---- ---- ----
+---- ---- gtx 1080 ---- ---- 
+
+---- ---- rtx 3060 ---- ---- 
+
+
+
+
+
+
+------------------------------------- GoogLeNet-------------------------------------
+---- ---- ---- ---- Old dataset ----  ---- ---- ---- 
+---- ---- gtx 1080 ---- ---- 
+- epochs = 100, early stopping = 10, stop = epoch  , batch_size = 32 , acc = %, loss = , val_acc = %, val_loss = , Time training:  (s) 
+- epochs = 100, early stopping = 10, stop = epoch  , batch_size = 32 , acc = %, loss = , val_acc = %, val_loss = , Time training:  (s)
+---- ---- rtx 3060 ---- ---- 
+---- ---- ---- ---- new dataset ----  ---- ---- ----
+---- ---- gtx 1080 ---- ---- 
+
+---- ---- rtx 3060 ---- ---- 
+
+
