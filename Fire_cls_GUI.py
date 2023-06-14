@@ -728,6 +728,11 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
 
     print("Check past: ", check_past_model(chosen_model), " Make model: ",make_model)
     if make_model:                          # make and fit another model
+        # the actual parameters are different respect to the previous ones. Save the param for next call of this method
+        past_param_model["type_model"] = chosen_model         # save type of the model
+        past_param_model["epochs"] = epochs                   # save type of the model
+        past_param_model["batch_size"] = batch_size           # save type of the model
+        past_param_model["early_patience"] = early_patience   # save type of the model
         # check what type of model the user want to make and fit, user can chose form this option: 'None','AlexNet','GoogleNet','Ifrit'
         if chosen_model == "None":
             error_text.set(er_no_model_specified_text)      # update error text
