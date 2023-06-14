@@ -26,6 +26,7 @@ RGB_mean_dict = {}                              # contain for each class the val
                                                 # the dictionary will have a key for each class and the corresponding value will be an array of three values.
 # ---- path variables ----
 path_dir_ds = "Dataset\Train_DS"                # folder in which there are the image ds for training
+#path_dir_ds = os.path.join("Immagini_tolte","fire")                # folder in which there are the image ds for training
 path_ds = os.path.join(os.pardir,path_dir_ds)   # complete folder to reach the ds -- P.S. For more detail read note 0, please (at the end of the file) 
 list_dir_ds = os.listdir(path_ds)               # list of the folders that are in the DS, one folder for each class
 # ------------------------------------ end: global var ------------------------------------
