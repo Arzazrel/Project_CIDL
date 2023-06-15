@@ -16,8 +16,19 @@
 - epochs = 100, early stopping = 20, stop = epoch 37 , batch_size = 64 , acc = 97%, loss = 0.08, val_acc = 94%, val_loss = 0.32,Time training: 251.5264449119568 (s)
 ---- ---- ---- ---- new dataset ----  ---- ---- ----
 ---- ---- gtx 1080 ---- ---- 
-
+- epochs = 100, early stopping = 10, stop = epoch  , batch_size = 32 , acc = %, loss = , val_acc = %, val_loss = ,Time training:  (s) 
+- epochs = 100, early stopping = 15, stop = epoch  , batch_size = 32 , acc = %, loss = , val_acc = %, val_loss = ,Time training:  (s) 
+- epochs = 100, early stopping = 20, stop = epoch  , batch_size = 32 , acc = %, loss = , val_acc = %, val_loss = ,Time training:  (s)
+- epochs = 100, early stopping = 10, stop = epoch  , batch_size = 64 , acc = %, loss = , val_acc = %, val_loss = ,Time training:  (s)
+- epochs = 100, early stopping = 15, stop = epoch  , batch_size = 64 , acc = %, loss = , val_acc = %, val_loss = ,Time training:  (s) 
+- epochs = 100, early stopping = 20, stop = epoch  , batch_size = 64 , acc = %, loss = , val_acc = %, val_loss = ,Time training:  (s)
 ---- ---- rtx 3060 ---- ---- 
+- epochs = 100, early stopping = 10, stop = epoch 27 , batch_size = 32 , acc = 96.02%, loss = 0.1144, val_acc = 96.88%, val_loss = 0.1192,Time training: 193.16516661643982 (s) 
+- epochs = 100, early stopping = 15, stop = epoch 29 , batch_size = 32 , acc = 95.70%, loss = 0.1392, val_acc = 95.47%, val_loss = 0.1479,Time training: 188.0746877193451 (s) 
+- epochs = 100, early stopping = 20, stop = epoch 35 , batch_size = 32 , acc = 95.05%, loss = 0.1409, val_acc = 93.59%, val_loss = 0.2123,Time training: 229.24284434318542 (s)
+- epochs = 100, early stopping = 10, stop = epoch  , batch_size = 64 , acc = %, loss = , val_acc = %, val_loss = ,Time training:  (s)
+- epochs = 100, early stopping = 15, stop = epoch  , batch_size = 64 , acc = %, loss = , val_acc = %, val_loss = ,Time training:  (s) 
+- epochs = 100, early stopping = 20, stop = epoch  , batch_size = 64 , acc = %, loss = , val_acc = %, val_loss = ,Time training:  (s)
 
 ------------------------------------- GoogLeNet -------------------------------------
 ---- ---- ---- ---- Old dataset ----  ---- ---- ---- 
@@ -61,6 +72,12 @@
 - epochs = 100, early stopping = 15, stop = epoch 23 , batch_size = 64 , acc = 96%, loss = 0.08, val_acc = 95%, val_loss = 0.15,Time training: 117.6722731590271 (s) 
 - epochs = 100, early stopping = 20, stop = epoch 26 , batch_size = 64 , acc = 96%, loss = 0.1, val_acc = 92%, val_loss = 0.2,Time training: 159.85188508033752 (s)
 ---- ---- rtx 3060 ---- ---- 
+- epochs = 100, early stopping = 10, stop = epoch 22 , batch_size = 32 , acc = 96.84%, loss = 0.0728, val_acc = 94.79%, val_loss = 0.2079, Time training: 115.43952751159668 (s) 
+- epochs = 100, early stopping = 15, stop = epoch 46 , batch_size = 32 , acc = 99.46%, loss = 0.0137, val_acc = 95.83%, val_loss = 0.1659, Time training: 241.36336851119995 (s)
+- epochs = 100, early stopping = 20, stop = epoch 65 , batch_size = 32 , acc = 98.57%, loss = 0.0421, val_acc = 94.79%, val_loss = 0.1821,Time training: 371.1167230606079 (s)
+- epochs = 100, early stopping = 10, stop = epoch 24 , batch_size = 64 , acc = 98.04%, loss = 0.0479, val_acc = 93.49%, val_loss = 0.2321,Time training: 120.87320137023926 (s)
+- epochs = 100, early stopping = 15, stop = epoch 28 , batch_size = 64 , acc = 97.67%, loss = 0.0594, val_acc = 95.57%, val_loss = 0.1762,Time training: 140.64871549606323 (s) 
+- epochs = 100, early stopping = 20, stop = epoch 40 , batch_size = 64 , acc = 98.97%, loss = 0.0268, val_acc = 95.18%, val_loss = 0.1710,Time training: 193.4587004184723 (s)
 ---- ---- ---- ---- new dataset ----  ---- ---- ----
 ---- ---- gtx 1080 ---- ---- 
 

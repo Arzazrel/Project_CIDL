@@ -114,7 +114,10 @@ label_ext_image_text = StringVar()              # text that shows the groundtrut
 label_ext_image_text.set('')                    # default value
 
 # ---- path variables ----
-path_dir_ds = os.path.join("Dataset","Train_DS")# folder in which there are the image ds for training
+# path to old ds
+#path_dir_ds = os.path.join("Dataset","old_ds","Train_DS")   # folder in which there are the image ds for training
+# path to new ds
+path_dir_ds = os.path.join("Dataset","new_ds","Train_DS")   # folder in which there are the image ds for training
 path_dir_test_ds = "Dataset\Test_DS"            # folder in which there are the image ds for testing
 path_dir_model = "Model"                        # folder in which there are saved the CNN model
 path_check_point_model = os.path.join(path_dir_model,"train_hdf5")  # folder in which there are saved the checkpoint for the model training
