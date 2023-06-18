@@ -169,7 +169,7 @@ def current_view_to_visualise():
     cleanGUI()                              # clean all element of the GUI
     # create variable for the GUI elements
     explainText = "Welcom to Ifrit.\nA fire Detection CNN."
-    CNN_model_text = ['None','AlexNet','GoogleNet','Ifrit_1','Ifrit_2']
+    CNN_model_text = ['None','AlexNet','GoogleNet','Ifrit_1','Ifrit_2','Ifrit_3','Ifrit_4']
 
     # create the GUI elements and place them 
     # ---- start: explain_frame ----
@@ -755,12 +755,22 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
             return
         elif chosen_model == "Ifrit_1":                    
             Ifrit_Model = IfritNet.IfriNet(len(classes))    # create an instance of the IfriNet class
-            Ifrit_Model.make_model(1)                       # make model (IfriNet 1 architecture)
+            Ifrit_Model.make_model(3)                       # make model (IfriNet 1 architecture)
             Ifrit_Model.compile_model()                     # compile model
             network = Ifrit_Model.return_model()            # return model
         elif chosen_model == "Ifrit_2":                       
             Ifrit_Model = IfritNet.IfriNet(len(classes))    # create an instance of the IfriNet class
             Ifrit_Model.make_model(2)                       # make model (IfriNet 1 architecture)
+            Ifrit_Model.compile_model()                     # compile model
+            network = Ifrit_Model.return_model()            # return model
+        elif chosen_model == "Ifrit_3":                       
+            Ifrit_Model = IfritNet.IfriNet(len(classes))    # create an instance of the IfriNet class
+            Ifrit_Model.make_model(3)                       # make model (IfriNet 1 architecture)
+            Ifrit_Model.compile_model()                     # compile model
+            network = Ifrit_Model.return_model()            # return model
+        elif chosen_model == "Ifrit_4":                       
+            Ifrit_Model = IfritNet.IfriNet(len(classes))    # create an instance of the IfriNet class
+            Ifrit_Model.make_model(4)                       # make model (IfriNet 1 architecture)
             Ifrit_Model.compile_model()                     # compile model
             network = Ifrit_Model.return_model()            # return model
     
