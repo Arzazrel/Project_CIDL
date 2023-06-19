@@ -129,97 +129,25 @@ class IfriNet:
             # Output layer
             self.model.add(layers.Dense(self.num_classes, activation='softmax'))
             
-        elif version_model == 4:                    # third verstion, for more information see Note 3 at the end of the file
-
-            """
-            # vers 1
-            inp = layers.Input(shape=(self.img_width, self.img_height, self.img_channel))       # input
-            # seq_0: is the first part of the CNN network starting with the input and ending with the first auxiliary classifier
-            seq_0 = layers.Conv2D(64, 7, strides=2, padding='same', activation='relu')(inp)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = layers.Conv2D(64, 1, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.Conv2D(192, 3, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=64, fil_1x1_3x3=96, fil_3x3=128, fil_1x1_5x5=16, fil_5x5=32, fil_m_pool=32)
-            seq_0 = inception_mod(seq_0, fil_1x1=128, fil_1x1_3x3=128, fil_3x3=192, fil_1x1_5x5=32, fil_5x5=96, fil_m_pool=64)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=192, fil_1x1_3x3=96, fil_3x3=208, fil_1x1_5x5=16, fil_5x5=48, fil_m_pool=64)
+        elif version_model == 4:                    # fourth verstion, for more information see Note 4 at the end of the file
+            inp = layers.Input(shape=(self.img_width, self.img_height, self.img_channel))                       # input
             
-            seq_2 = layers.GlobalAveragePooling2D()(seq_0)
-            seq_2 = layers.Dropout(0.4)(seq_2)
-            out = layers.Dense(self.num_classes, activation='softmax')(seq_2)           # output layer
-            """
-            """
-            # vers 2
-            inp = layers.Input(shape=(self.img_width, self.img_height, self.img_channel))       # input
-            # seq_0: is the first part of the CNN network starting with the input and ending with the first auxiliary classifier
-            seq_0 = layers.Conv2D(32, 7, strides=2, padding='same', activation='relu')(inp)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = layers.Conv2D(32, 1, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.Conv2D(64, 3, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=64, fil_1x1_3x3=96, fil_3x3=128, fil_1x1_5x5=16, fil_5x5=32, fil_m_pool=32)
-            seq_0 = inception_mod(seq_0, fil_1x1=128, fil_1x1_3x3=128, fil_3x3=192, fil_1x1_5x5=32, fil_5x5=96, fil_m_pool=64)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=192, fil_1x1_3x3=96, fil_3x3=208, fil_1x1_5x5=16, fil_5x5=48, fil_m_pool=64)
+            net = layers.Conv2D(filters=16, kernel_size=(7, 7), strides=(2,2), padding='same', activation='relu')(inp)      # first conv layer
+            net = layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2))(net)                                                 # max pool
             
-            seq_2 = layers.GlobalAveragePooling2D()(seq_0)
-            seq_2 = layers.Dropout(0.4)(seq_2)
-            out = layers.Dense(self.num_classes, activation='softmax')(seq_2)           # output layer
-            """
-            """
-            # vers 3
-            inp = layers.Input(shape=(self.img_width, self.img_height, self.img_channel))       # input
-            # seq_0: is the first part of the CNN network starting with the input and ending with the first auxiliary classifier
-            seq_0 = layers.Conv2D(32, 7, strides=2, padding='same', activation='relu')(inp)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = layers.Conv2D(32, 1, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.Conv2D(64, 3, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=32, fil_1x1_3x3=32, fil_3x3=64, fil_1x1_5x5=32, fil_5x5=32, fil_m_pool=32)
-            seq_0 = inception_mod(seq_0, fil_1x1=64, fil_1x1_3x3=64, fil_3x3=128, fil_1x1_5x5=32, fil_5x5=64, fil_m_pool=64)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=128, fil_1x1_3x3=96, fil_3x3=128, fil_1x1_5x5=64, fil_5x5=64, fil_m_pool=64)
+            net = inception_mod(net, fil_1x1=16, fil_1x1_3x3=8, fil_3x3=32, fil_1x1_5x5=16, fil_5x5=64, fil_m_pool=32)      # first inception layer
+            net = layers.MaxPooling2D(3, strides=1)(net)                                                                    # max pool 
             
-            seq_2 = layers.GlobalAveragePooling2D()(seq_0)
-            seq_2 = layers.Dropout(0.4)(seq_2)
-            out = layers.Dense(self.num_classes, activation='softmax')(seq_2)           # output layer
-            """
-            """
-            # vers 4
-            inp = layers.Input(shape=(self.img_width, self.img_height, self.img_channel))       # input
-            # seq_0: is the first part of the CNN network starting with the input and ending with the first auxiliary classifier
-            seq_0 = layers.Conv2D(16, 7, strides=2, padding='same', activation='relu')(inp)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = layers.Conv2D(32, 1, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.Conv2D(64, 3, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=16, fil_1x1_3x3=16, fil_3x3=32, fil_1x1_5x5=16, fil_5x5=32, fil_m_pool=32)
-            seq_0 = inception_mod(seq_0, fil_1x1=32, fil_1x1_3x3=32, fil_3x3=64, fil_1x1_5x5=32, fil_5x5=64, fil_m_pool=64)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=64, fil_1x1_3x3=64, fil_3x3=128, fil_1x1_5x5=64, fil_5x5=64, fil_m_pool=64)
+            net = inception_mod(net, fil_1x1=16, fil_1x1_3x3=8, fil_3x3=32, fil_1x1_5x5=16, fil_5x5=64, fil_m_pool=32)      # second inception layer
+            net = inception_mod(net, fil_1x1=32, fil_1x1_3x3=16, fil_3x3=64, fil_1x1_5x5=16, fil_5x5=32, fil_m_pool=64)     # third inception layer
+            net = layers.MaxPooling2D(3, strides=2)(net)                                                                    # max pool
             
-            seq_2 = layers.GlobalAveragePooling2D()(seq_0)
-            seq_2 = layers.Dropout(0.4)(seq_2)
-            out = layers.Dense(self.num_classes, activation='softmax')(seq_2)           # output layer
-            """
+            net = inception_mod(net, fil_1x1=64, fil_1x1_3x3=16, fil_3x3=128, fil_1x1_5x5=8, fil_5x5=16, fil_m_pool=16)     # fourth inception layer
+            net = layers.GlobalAveragePooling2D()(net)                                                                      # avg pool
             
-            # vers 5
-            inp = layers.Input(shape=(self.img_width, self.img_height, self.img_channel))       # input
-            # seq_0: is the first part of the CNN network starting with the input and ending with the first auxiliary classifier
-            seq_0 = layers.Conv2D(16, 7, strides=2, padding='same', activation='relu')(inp)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = layers.Conv2D(32, 1, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.Conv2D(64, 3, strides=1, padding='same', activation='relu')(seq_0)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=32, fil_1x1_3x3=8, fil_3x3=32, fil_1x1_5x5=8, fil_5x5=32, fil_m_pool=32)
-            seq_0 = inception_mod(seq_0, fil_1x1=32, fil_1x1_3x3=16, fil_3x3=64, fil_1x1_5x5=16, fil_5x5=64, fil_m_pool=64)
-            seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
-            seq_0 = inception_mod(seq_0, fil_1x1=64, fil_1x1_3x3=32, fil_3x3=128, fil_1x1_5x5=32, fil_5x5=64, fil_m_pool=32)
-            
-            seq_2 = layers.GlobalAveragePooling2D()(seq_0)
-            seq_2 = layers.Dropout(0.4)(seq_2)
-            out = layers.Dense(self.num_classes, activation='softmax')(seq_2)           # output layer
+            net = layers.Dense(64, activation='relu')(net)                              # fully connect 
+            net = layers.Dropout(0.3)(net)                                              # dropout
+            out = layers.Dense(self.num_classes, activation='softmax')(net)             # output layer
             
             self.model = Model(inputs = inp, outputs = out)             # assign the CNN in model
         
@@ -235,20 +163,29 @@ class IfriNet:
     # method for return the model
     def return_model(self):
         return self.model
+    
+#Ifrit_Model = IfriNet(2)    # create an instance of the IfriNet class
+#Ifrit_Model.make_model(4)    
 
-og0 = IfriNet(2)
-
-#og0.make_model(1)                       # make model (IfriNet 1 architecture)
-#og0.make_model(2)                       # make model (IfriNet 1 architecture)
-#og0.make_model(3)                       # make model (IfriNet 1 architecture) 
-og0.make_model(4)                       # make model (IfriNet 1 architecture) 
 """
 -------- Notes --------
 -- Note 1 --
- 
+    Simple CNN consisting of 3 convolutional layers, cascaded with max pool and batch normalization, 
+    followed by 2 fully connect layers before the output layer. 
 
 -- Note 2 --
+    CNN inspired by the AlexNet model. Network consisting of 4 convolutional layers, 2 fully connect layers, with dropout, 
+    and the output layer. As in AlexNet the max pool is present only after the first and fourth convolutional layers. 
+    Normalization is present after all of the layers except the penultimate one. 
 
 -- Note 3 --
+    Model inspired by a "lite" version of the second model. In this network we tried to go to reduce the number of training 
+    weights in order to have a network similar to the architecture proposed before but much lighter and faster. 
 
+-- Note 4 --
+    CNN that takes inspiration from the GoogLeNet model. This network consists of a convolutional layer, with max pool, 
+    followed by four inception modules, a fully connect layer, with dropout, and the output layer.
+    In particular, in the four inception modules there is maxpool after the first and third, and at the end there is 
+    global average pooling. In these modules we tried to give more emphasis from first to filters with larger kenrel and then, 
+    as the depth of the network increases and the input size decreases give more emphasis to filters with smaller kernels.
 """

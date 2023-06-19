@@ -820,9 +820,10 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
     model_trained = True                                # update status variable
     status_model_text.set('Model: trained')             # notify the end of the process
     
-    plot_fit_result(history.history,0)              # visualize the value for the fit - history.history is a dictionary - call method for plot train result
+    plot_fit_result(history.history,0)                  # visualize the value for the fit - history.history is a dictionary - call method for plot train result
     model_evaluate("test")                              # evaluate the model 
-
+    confusion_matrix()                                  # call method to obtain the confusion matrix
+    
 # method for evaluate the model by the test set. 'param' specify if the evaluate hase to use test set or external test set ('',)
 def model_evaluate(param):
     error_text.set('')                                  # clear error text
@@ -943,6 +944,48 @@ def plot(title,value_list):
     plt.xlabel("# Epochs")              # x axis title
     plt.ylabel("Value")                 # y axis title
     plt.show()
+    
+# method for create and plot the confusion metrix of the model trained
+def confusion_matrix():
+    global test_image, test_label, network, classes # global variables references
+    # create the confusion matrix, rows indicate the real class and columns indicate the predicted class 
+    conf_matrix = np.zeros((len(classes),len(classes)))     # at begin values are 0
+    
+    predictions = network.predict(test_image)               # get the output for each sample of the test set
+    # slide the prediction result and go to create the confusion matrix
+    for i in range(len(test_image)):
+        # test_label[i] indicate the real value of the label associated at the test_image[i] -> is real class (row)
+        # predictions[i] indicate the class value predicted by the model for the test_image[i] -> is predicted class (column)
+        # the values are in categorical format, translate in int
+        conf_matrix[np.argmax(test_label[i])][np.argmax(predictions[i])] += 1                              # update value
+        
+    # do percentages of confusion matrix
+    conf_matrix_perc = [[None for c in range(conf_matrix.shape[1])] for r in range(conf_matrix.shape[0])]  # define matrix
+    
+    for i in range(conf_matrix.shape[0]):                   # rows
+        for j in range(conf_matrix.shape[1]):               # columns
+            conf_matrix_perc[i][j] = " (" + str( round( (conf_matrix[i][j]/len(test_image))*100 ,2) ) + "%)"    # calculate percentage value
+    
+    # plot the confusion matrix
+    rows = classes                                          # contain the label of the classes showed in the rowvalues of rows          
+    columns = classes                                       # contain the label of the classes showed in the rowvalues of columns   
+
+    fig, ax = plt.subplots(figsize=(7.5, 7))
+    ax.matshow(conf_matrix, cmap=plt.cm.Blues, alpha=0.3)
+    # Show all ticks and label them with the respective list entries
+    ax.set_xticks(np.arange(len(columns)), labels=columns)
+    ax.set_yticks(np.arange(len(rows)), labels=rows)
+    
+    for i in range(len(rows)):                              # rows
+        for j in range(len(columns)):                       # columns
+            # give the value in the confusion matrix
+            ax.text(x=j, y=i, s=str(str(conf_matrix[i][j])+conf_matrix_perc[i][j]),
+                           ha="center", va="center", size='x-large')
+            
+    plt.xlabel('Predictions', fontsize=18)
+    plt.ylabel('Real', fontsize=18)
+    plt.title('Confusion Matrix', fontsize=18)
+    plt.show()                                              # shows confusion matrix
     
 # method to check GPU device avaible and setting
 def GPU_check():
