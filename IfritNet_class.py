@@ -155,7 +155,7 @@ class IfriNet:
             
     # method for compile the model
     def compile_model(self):
-        # compile rmsprop
+        # compile Adam
         self.model.compile(optimizer='adam',
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
