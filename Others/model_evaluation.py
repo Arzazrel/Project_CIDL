@@ -6,24 +6,15 @@ explanation:
     file to do evaluation of a model. given a model and a dataset perform fit and evaluation with cross validation for each pair value
     from the parameters (batch_size and early patience) and shows the results (accuracy, loss and confusion matrix)
 """
-import tensorflow as tf
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-import cv2
-
-from sklearn import datasets
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import RocCurveDisplay, confusion_matrix, ConfusionMatrixDisplay
-
 # general
 import random
 import time
 import math
-# for model
+import os
+# for model, tensorflow, keras and numpy
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from sklearn.model_selection import train_test_split
 from tensorflow.keras import models
 from tensorflow.keras import layers
 from tensorflow.keras.utils import to_categorical
@@ -32,9 +23,15 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras import Model
 from keras import backend as back
+# for set sklearn
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import RocCurveDisplay, confusion_matrix, ConfusionMatrixDisplay
 # for plot
+import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 # for image visualization
+import cv2
 import PIL
 from PIL import ImageTk
 from PIL import Image
@@ -74,6 +71,7 @@ list_dir_ds = os.listdir(path_ds)                                               
 path_dir_model = "Model"                        # folder in which there are saved the CNN model
 path_check_point_model = os.path.join(os.pardir,path_dir_model,"train_hdf5")  # folder in which there are saved the checkpoint for the model training
 # ------------------------------------ end: global var ------------------------------------
+
 # ------------------------------------ start: utility methods ------------------------------------
 def inception_mod(in_net, fil_1x1, fil_1x1_3x3, fil_3x3, fil_1x1_5x5, fil_5x5, fil_m_pool):
     # four parallel path
@@ -92,7 +90,138 @@ def inception_mod(in_net, fil_1x1, fil_1x1_3x3, fil_3x3, fil_1x1_5x5, fil_5x5, f
     return tf.concat([path1, path2, path3, path4], axis=3)                  # merge of the different path
 
 def make_model():
-    if model_name == "Ifrinet_v4":
+    # ---- AlexNet Model ----
+    if model_name == "AlexNet":
+        # version of the model made using batch normalisation
+        # 1st Conv layer (has Max pooling)
+        model.add(layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4,4), padding='valid', activation='relu', input_shape=(self.img_width, self.img_height, self.img_channel)))
+        model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 2nd Conv layer (has Max pooling)
+        model.add(layers.Conv2D(filters=256, kernel_size=(5, 5), strides=(1,1), padding='valid', activation='relu'))
+        model.add(layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisations
+        # 3rd Conv layer (hasn't Max pooling)
+        model.add(layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1,1), padding='valid', activation='relu'))
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisations
+        # 4th Conv layer (hasn't Max pooling)
+        model.add(layers.Conv2D(filters=384, kernel_size=(3, 3), strides=(1,1), padding='valid', activation='relu'))
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisations
+        # 5th Conv layer (has Max pooling)
+        model.add(layers.Conv2D(filters=256, kernel_size=(3, 3), strides=(1,1), padding='valid', activation='relu'))
+        model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisations
+        # 1th dense layer
+        model.add(layers.Flatten())
+        model.add(layers.Dense(4096, activation='relu'))                                       # dense layer
+        model.add(layers.Dropout(0.5))                                                         # dropout
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisations
+        # 2nd dense layer
+        model.add(layers.Dense(4096, activation='relu'))                                       # dense layer
+        model.add(layers.Dropout(0.5))                                                         # dropout
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisations
+        # Output layer
+        model.add(layers.Dense(self.num_classes, activation='softmax'))       
+
+        model.compile(optimizer='rmsprop',
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
+    # ---- IfriNet Models ----
+    elif model_name == "Ifrinet_v1":
+        model = models.Sequential()                                   # rete del modello
+        # 1st Conv layer
+        model.add(layers.Conv2D(filters=32, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(self.img_width, self.img_height, self.img_channel)))
+        model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 2nd Conv layer
+        model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), strides=(2,2), padding='valid', activation='relu'))
+        model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(1,1), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 3rd Conv layer
+        model.add(layers.Conv2D(filters=128, kernel_size=(3, 3), strides=(2,2), padding='valid', activation='relu'))
+        model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(1,1), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        model.add(layers.Flatten())
+        # 1th dense layer
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dropout(0.3))                                                         # dropout
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 2nd dense layer
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dropout(0.3))                                                         # dropout
+        # Output layer
+        model.add(layers.Dense(self.num_classes, activation='softmax'))
+
+        # compile Adam
+        network.compile(optimizer='adam',
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
+
+    elif model_name == "Ifrinet_v2":
+        model = models.Sequential()
+        # 1st Conv layer
+        model.add(layers.Conv2D(filters=32, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(self.img_width, self.img_height, self.img_channel)))
+        model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 2nd Conv layer
+        model.add(layers.Conv2D(filters=64, kernel_size=(5, 5), strides=(2,2), padding='valid', activation='relu'))
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 3rd Conv layer
+        model.add(layers.Conv2D(filters=128, kernel_size=(3, 3), strides=(1,1), padding='valid', activation='relu'))
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 4th Conv layer
+        model.add(layers.Conv2D(filters=64, kernel_size=(3, 3), strides=(1,1), padding='valid', activation='relu'))
+        model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(1,1), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        model.add(layers.Flatten())
+        # 1th dense layer
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dropout(0.3))                                                         # dropout
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 2nd dense layer
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dropout(0.3))                                                         # dropout
+        # Output layer
+        model.add(layers.Dense(self.num_classes, activation='softmax'))
+
+        # compile Adam
+        network.compile(optimizer='adam',
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
+
+    elif model_name == "Ifrinet_v3":
+        model = models.Sequential()
+        # 1st Conv layer
+        model.add(layers.Conv2D(filters=16, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(self.img_width, self.img_height, self.img_channel)))
+        model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 2nd Conv layer
+        model.add(layers.Conv2D(filters=32, kernel_size=(5, 5), strides=(2,2), padding='valid', activation='relu'))
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 3rd Conv layer
+        model.add(layers.Conv2D(filters=64, kernel_size=(3, 3), strides=(1,1), padding='valid', activation='relu'))
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 4th Conv layer
+        model.add(layers.Conv2D(filters=32, kernel_size=(3, 3), strides=(1,1), padding='valid', activation='relu'))
+        model.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(1,1), padding='valid'))       # Max pooling
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        model.add(layers.Flatten())
+        # 1th dense layer
+        model.add(layers.Dense(64, activation='relu'))
+        model.add(layers.Dropout(0.3))                                                         # dropout
+        model.add(layers.BatchNormalization())                                                 # Batch Normalisation
+        # 2nd dense layer
+        model.add(layers.Dense(64, activation='relu'))
+        model.add(layers.Dropout(0.3))                                                         # dropout
+        # Output layer
+        model.add(layers.Dense(self.num_classes, activation='softmax'))
+
+        # compile Adam
+        network.compile(optimizer='adam',
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
+
+    elif model_name == "Ifrinet_v4":
         global network
         
         inp = layers.Input(shape=(img_width, img_height, img_channel))                       # input
@@ -116,12 +245,12 @@ def make_model():
     
         network = Model(inputs = inp, outputs = out)             # assign the CNN in model
     
-        # compile rmsprop
+        # compile Adam
         network.compile(optimizer='adam',
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
         
-        return network
+    return network
     
 # method to check GPU device avaible and setting
 def GPU_check():
@@ -143,7 +272,7 @@ def GPU_check():
     print("Memoria usata: ",print("",tf.config.experimental.get_memory_info('GPU:0')['current'] / 10**9))
 # ------------------------------------ end: utility methods ------------------------------------
 
-# ------------------ start: generetor function ------------------
+# ------------------------------------ start: generetor function ------------------------------------
 # explanation: for large dataset with large image or big batch size the memory memory may not be sufficient. 
 #              To avoid memory overflow, the sets are supplied in batches via yeld istruction.
 # define generator function to do the training set
@@ -274,7 +403,7 @@ def generator_test():
                     label_tensor.append(label_rest_tensor[i])
                 yield img_tensor, label_tensor                  # return the last batch
 
-# ------------------ end: generetor function ------------------
+# ------------------------------------ end: generetor function ------------------------------------
 
 GPU_check()
 # -------- load the dataset --------
@@ -325,6 +454,7 @@ total_labels_ds = to_categorical(total_labels_ds,num_classes=len(classes))      
 folder_dim = len(total_image_ds) // k               # number of sample in each folder of the k-cross validation
 print ("folder dim: ", folder_dim)
 
+start_time = time.time()                            # start time for training
 # slide along each pairs of parameters and does k-cross validation for each one of them
 for batch in batch_size_list:       # slide the batch_size values
     batch_size = batch                  # update the actual 
@@ -336,6 +466,7 @@ for batch in batch_size_list:       # slide the batch_size values
         result_dict[name]['acc'] = []               # define list of accuracy
         
         for fold in range(k):               # do cross validation
+            print("Pair: batch_size = ", batch," ,patience = ",early, " cicle ",fold," of ",k)
             network = make_model()                  # take the model
             
             # test data: data from partition k
@@ -485,3 +616,6 @@ plt.title(model_name)                       # plot title
 plt.xlabel("Parameters")                    # x axis title
 plt.ylabel("Loss")                          # y axis title
 plt.show()                                  # show loss plot
+
+end_time = time.time()                              # end time for training
+print(f"Time to all cross validation of the model: {(end_time - start_time) // 60} (m)")  # print time to all cross validation of the model
