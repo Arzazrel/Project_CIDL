@@ -46,12 +46,10 @@ img_height = 224                    # height of the images in input to CNN
 img_width = 224                     # width of the images in input to CNN
 img_channel = 3                     # channel of the images in input to CNN     
 epochs = 100                        # number of epochs of the training
-k = 2                              # number of the fold of the k-cross validation
-#batch_size_list = [32,64,128]       # batch size for the training
-batch_size_list = [32,64]           # batch size for the training
+k = 10                              # number of the fold of the k-cross validation
+batch_size_list = [32,64,128]       # batch size for the training
 batch_size = 32                     # indicate the actual value of batch_size used in training
-#early_patience = [5,15,20]         # patience for early stopping in the training
-early_patience = [5]                # patience for early stopping in the training
+early_patience = [10,15,20]         # patience for early stopping in the training
 result_dict = {}                    # dictionary that contains results for each k-cross validation done
 network = None                      # contain the CNN model, default value is None
 truncate_set = False                # variable which indicates whether the sets (train, test,val) must be truncate or not when divided to batch_size
@@ -279,7 +277,7 @@ def generator_test():
 # ------------------ end: generetor function ------------------
 
 GPU_check()
-# -- load the dataset
+# -------- load the dataset --------
 for folder in list_dir_ds:                      # for each folder in DS
     classes.append(str(folder))                 # update classes
     index = classes.index(str(folder))          # take index of classes, is teh label of this class
@@ -309,12 +307,7 @@ print("total_image_ds",len(total_image_ds), total_image_ds.shape)
 print("total_labels_ds",len(total_labels_ds), total_labels_ds.shape)
 print("Requied memory for images ds: ",total_image_ds.size * total_image_ds.itemsize / 10**9," GB")
 
-# -- build model
-#make_model()
-
-# -- cross validation
-folder_dim = len(total_image_ds) // k               # number of sample in each folder of the k-cross validation
-print ("folder dim: ", folder_dim)
+# ----- preprocessing and reshape ----
 # shuffle the data
 data = list(zip(total_image_ds, total_labels_ds))   # organize img and label in zip 
 np.random.shuffle(data)                             # shuffle zip
@@ -323,34 +316,40 @@ img, label = zip(*data)                             # return image and label shu
 total_image_ds = np.array(img)
 total_labels_ds = np.array(label)
 
-# ----- preprocessing and reshape ----
 lunghezza = len(total_image_ds)                                                     # take the len of the dataset
 image_ds = total_image_ds.reshape((lunghezza, img_width, img_height, img_channel))  # resize
-total_image_ds = image_ds.astype('float32') / 255                             # normalization
+total_image_ds = image_ds.astype('float32') / 255                                   # normalization
 total_labels_ds = to_categorical(total_labels_ds,num_classes=len(classes))          # transform label in categorical format
 
+# -------- cross validation --------
+folder_dim = len(total_image_ds) // k               # number of sample in each folder of the k-cross validation
+print ("folder dim: ", folder_dim)
+
+# slide along each pairs of parameters and does k-cross validation for each one of them
 for batch in batch_size_list:       # slide the batch_size values
-    batch_size = batch              # update the actual 
-    for early in early_patience:        # slide the early_patience
+    batch_size = batch                  # update the actual 
+    for early in early_patience:            # slide the early_patience
         # define the dictionary that will contain the results of the k-cross validation training
         name = "b"+str(batch)+"_e"+str(early)       # create the name for this combination of values parameters
         result_dict[name] = {}                      # define 
-        result_dict[name]['loss'] = []                
-        result_dict[name]['acc'] = []                 
+        result_dict[name]['loss'] = []              # define list of loss
+        result_dict[name]['acc'] = []               # define list of accuracy
         
         for fold in range(k):               # do cross validation
-            network = make_model()
+            network = make_model()                  # take the model
+            
             # test data: data from partition k
-            test_image = total_image_ds[fold * folder_dim: (fold + 1) * folder_dim]          # take img
-            test_label = total_labels_ds[fold * folder_dim: (fold + 1) * folder_dim]       # take labels
+            test_image = total_image_ds[fold * folder_dim: (fold + 1) * folder_dim]     # take img
+            test_label = total_labels_ds[fold * folder_dim: (fold + 1) * folder_dim]    # take labels
+            
             # training and validation data: data from all other partitions
             other_img = np.concatenate([total_image_ds[:fold * folder_dim],  total_image_ds[(fold+ 1) * folder_dim:]], axis=0)      # take other images
             other_label = np.concatenate([total_labels_ds[:fold * folder_dim],  total_labels_ds[(fold+ 1) * folder_dim:]], axis=0)  # take other labels
             # split in training and validtion set
             train_image, val_img, train_label, val_label = train_test_split(other_img, other_label, test_size=val_set_split , random_state=42, shuffle=True)
             
-            del other_img
-            del other_label
+            del other_img                       # clear to free memory
+            del other_label                     # clear to free memory
             
             # define early stopping
             checkpoint = ModelCheckpoint(filepath = path_check_point_model+'/weight_seg_'+name+".hdf5", verbose = 1, save_best_only = True, monitor='val_loss', mode='min') # val_loss, min, val_categorical_accuracy, max
@@ -378,8 +377,8 @@ for batch in batch_size_list:       # slide the batch_size values
             result_dict[name]['loss'].append(loss_score)   
             result_dict[name]['acc'].append(acc_score) 
             
-            del loss_score
-            del acc_score
+            del loss_score                      # clear to free memory
+            del acc_score                       # clear to free memory
             
             # create the confusion matrix, rows indicate the real class and columns indicate the predicted class 
             conf_matrix = np.zeros((len(classes),len(classes)))     # at begin values are 0
@@ -396,29 +395,29 @@ for batch in batch_size_list:       # slide the batch_size values
             conf_matrix_perc = [[None for c in range(conf_matrix.shape[1])] for r in range(conf_matrix.shape[0])]  # define matrix
             for i in range(conf_matrix.shape[0]):                   # rows
                 for j in range(conf_matrix.shape[1]):               # columns
-                    conf_matrix_perc[i][j] = round( (conf_matrix[i][j]/len(test_image))*100 ,2)    # calculate percentage value
+                    conf_matrix_perc[i][j] = round( (conf_matrix[i][j]/len(test_image))*100 ,2)     # calculate percentage value
             
             # check if there is already a cinfusion matrix saved for this parameters
             if result_dict[name].get('conf_matrix') is None:
                 # there isn't already a confusion matrix saved
-                result_dict[name]['conf_matrix'] = conf_matrix
+                result_dict[name]['conf_matrix'] = conf_matrix                                      # assigne value
             else:
                 # there is already a confusion matrix saved, sum new matrix with old metrix
                 for i in range(conf_matrix.shape[0]):                   # rows
                     for j in range(conf_matrix.shape[1]):               # columns
-                        result_dict[name]['conf_matrix'][i][j] += conf_matrix[i][j]
+                        result_dict[name]['conf_matrix'][i][j] += conf_matrix[i][j]                 # update value
                 
             # check if there is already a cinfusion matrix percentages saved for this parameters
             if result_dict[name].get('conf_matrix_perc') is None:
-                # there isn't already a confusion matrix saved
-                result_dict[name]['conf_matrix_perc'] = conf_matrix_perc
+                # there isn't already a confusion matrix percentages saved
+                result_dict[name]['conf_matrix_perc'] = conf_matrix_perc                            # assigne value
             else:
-                # there is already a confusion matrix saved
+                # there is already a confusion matrix percentages saved
                 for i in range(conf_matrix.shape[0]):                   # rows
                     for j in range(conf_matrix.shape[1]):               # columns
-                        result_dict[name]['conf_matrix_perc'][i][j] += conf_matrix_perc[i][j]
+                        result_dict[name]['conf_matrix_perc'][i][j] += conf_matrix_perc[i][j]       # update value
                     
-            
+            # clear variables to free memory
             back.clear_session()                            # clear session to free memory
             test_image = None
             test_label = None
@@ -426,24 +425,9 @@ for batch in batch_size_list:       # slide the batch_size values
             val_img = None
             train_label = None
             val_label = None
-            del predictions
-            del network
-            """
-            print("param: ", name, " k:",fold)
-            print("test dim ",test_imgs.shape,test_labels.shape)
-            print("other dim ",other_img.shape,other_label.shape)
-            print("train dim ",train_img.shape,train_label.shape)
-            print("val dim ",val_img.shape,val_label.shape)
-            """
-        print("Prima della media\nresult of" + name + " :" ,result_dict[name]['loss'] , " : ",result_dict[name]['acc'])
-        # validation score: average of the validation scores of the k folds
-        loss_scores = np.average(result_dict[name]['loss'])
-        acc_scores = np.average(result_dict[name]['acc'])
-        print("Dopo della media\nresult of" + name + " :" ,loss_scores," : ",acc_scores)
-        
-        # do the mean of the confusion matrixs and show them
-        print("matrix: ",result_dict[name]['conf_matrix'])
-        print("matrix perc: ",result_dict[name]['conf_matrix_perc'])
+            del predictions                                 # clear to free memory
+            del network                                     # clear to free memory
+            
         # plot the confusion matrix
         rows = classes                                          # contain the label of the classes showed in the rowvalues of rows          
         columns = classes                                       # contain the label of the classes showed in the rowvalues of columns   
@@ -457,9 +441,9 @@ for batch in batch_size_list:       # slide the batch_size values
         for i in range(len(rows)):                              # rows
             for j in range(len(columns)):                       # columns
                 # give the value in the confusion matrix
-                conf_m_mean = result_dict[name]['conf_matrix'][i][j] // k
-                conf_m_perc_mean = round (result_dict[name]['conf_matrix_perc'][i][j] / k , 2)
-                value = str( str ( conf_m_mean ) + " (" + str( conf_m_perc_mean ) + "%)")
+                conf_m_mean = result_dict[name]['conf_matrix'][i][j] // k                       # mean of confusion matrix in position i,j
+                conf_m_perc_mean = round (result_dict[name]['conf_matrix_perc'][i][j] / k , 2)  # mean of confusion matrix percentages in position i,j
+                value = str( str ( conf_m_mean ) + " (" + str( conf_m_perc_mean ) + "%)")       # concatenate the value of conf matrix and conf matrix percentage
                 # assigne value of confusion matrix
                 ax.text(x=j, y=i, s=value,
                                ha="center", va="center", size='x-large')
@@ -489,15 +473,15 @@ for pair in list_pair_param:
 # -- plot accuracy results
 fig = plt.figure()
 plt.plot(list_pair_param,list_acc ,'o-b')
-plt.title(model_name)               # plot title
-plt.xlabel("Parameters")              # x axis title
-plt.ylabel("Accuracy")                # y axis title
-plt.show()
+plt.title(model_name)                       # plot title
+plt.xlabel("Parameters")                    # x axis title
+plt.ylabel("Accuracy")                      # y axis title
+plt.show()                                  # show accuracy plot
 
 # -- plot loss results
 fig = plt.figure()
 plt.plot(list_pair_param,list_loss ,'o-b')
-plt.title(model_name)               # plot title
-plt.xlabel("Parameters")              # x axis title
-plt.ylabel("Loss")                # y axis title
-plt.show()
+plt.title(model_name)                       # plot title
+plt.xlabel("Parameters")                    # x axis title
+plt.ylabel("Loss")                          # y axis title
+plt.show()                                  # show loss plot
