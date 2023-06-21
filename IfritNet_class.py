@@ -164,8 +164,8 @@ class IfriNet:
     def return_model(self):
         return self.model
     
-#Ifrit_Model = IfriNet(2)    # create an instance of the IfriNet class
-#Ifrit_Model.make_model(3)   
+Ifrit_Model = IfriNet(2)    # create an instance of the IfriNet class
+#Ifrit_Model.make_model(1)   
 #Ifrit_Model.make_model(4)    
 
 """

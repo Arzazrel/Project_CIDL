@@ -105,6 +105,9 @@ class AlexNet:
     # method for return the model
     def return_model(self):
         return self.model
+    
+AlexNet_Model = AlexNet(2)    # create an instance of the IfriNet class
+AlexNet_Model.make_model()  
         
 """
 brief description:
