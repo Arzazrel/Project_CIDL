@@ -94,7 +94,7 @@ def make_model():
     if model_name == "AlexNet":
         network = models.Sequential()
         # 1st Conv layer (has Max pooling)
-        network.add(layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4,4), padding='valid', activation='relu', input_shape=(self.img_width, self.img_height, self.img_channel)))
+        network.add(layers.Conv2D(filters=96, kernel_size=(11, 11), strides=(4,4), padding='valid', activation='relu', input_shape=(img_width, img_height, img_channel)))
         network.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
         network.add(layers.BatchNormalization())                                                 # Batch Normalisation
         # 2nd Conv layer (has Max pooling)
@@ -121,7 +121,7 @@ def make_model():
         network.add(layers.Dropout(0.5))                                                         # dropout
         network.add(layers.BatchNormalization())                                                 # Batch Normalisations
         # Output layer
-        network.add(layers.Dense(self.num_classes, activation='softmax'))       
+        network.add(layers.Dense(len(classes), activation='softmax'))       
 
         network.compile(optimizer='rmsprop',
                       loss='categorical_crossentropy',
@@ -130,7 +130,7 @@ def make_model():
     elif model_name == "Ifrinet_v1":
         network = models.Sequential()                                   # rete del modello
         # 1st Conv layer
-        network.add(layers.Conv2D(filters=32, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(self.img_width, self.img_height, self.img_channel)))
+        network.add(layers.Conv2D(filters=32, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(img_width, img_height, img_channel)))
         network.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
         network.add(layers.BatchNormalization())                                                 # Batch Normalisation
         # 2nd Conv layer
@@ -150,7 +150,7 @@ def make_model():
         network.add(layers.Dense(128, activation='relu'))
         network.add(layers.Dropout(0.3))                                                         # dropout
         # Output layer
-        network.add(layers.Dense(self.num_classes, activation='softmax'))
+        network.add(layers.Dense(len(classes), activation='softmax'))
 
         # compile Adam
         network.compile(optimizer='adam',
@@ -160,7 +160,7 @@ def make_model():
     elif model_name == "Ifrinet_v2":
         network = models.Sequential()
         # 1st Conv layer
-        network.add(layers.Conv2D(filters=32, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(self.img_width, self.img_height, self.img_channel)))
+        network.add(layers.Conv2D(filters=32, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(img_width, img_height, img_channel)))
         network.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
         network.add(layers.BatchNormalization())                                                 # Batch Normalisation
         # 2nd Conv layer
@@ -182,7 +182,7 @@ def make_model():
         network.add(layers.Dense(128, activation='relu'))
         network.add(layers.Dropout(0.3))                                                         # dropout
         # Output layer
-        network.add(layers.Dense(self.num_classes, activation='softmax'))
+        network.add(layers.Dense(len(classes), activation='softmax'))
 
         # compile Adam
         network.compile(optimizer='adam',
@@ -192,7 +192,7 @@ def make_model():
     elif model_name == "Ifrinet_v3":
         network = models.Sequential()
         # 1st Conv layer
-        network.add(layers.Conv2D(filters=16, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(self.img_width, self.img_height, self.img_channel)))
+        network.add(layers.Conv2D(filters=16, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(img_width, img_height, img_channel)))
         network.add(layers.MaxPooling2D(pool_size=(3, 3), strides=(2,2), padding='valid'))       # Max pooling
         network.add(layers.BatchNormalization())                                                 # Batch Normalisation
         # 2nd Conv layer
@@ -214,7 +214,7 @@ def make_model():
         network.add(layers.Dense(64, activation='relu'))
         network.add(layers.Dropout(0.3))                                                         # dropout
         # Output layer
-        network.add(layers.Dense(self.num_classes, activation='softmax'))
+        network.add(layers.Dense(len(classes), activation='softmax'))
 
         # compile Adam
         network.compile(optimizer='adam',
