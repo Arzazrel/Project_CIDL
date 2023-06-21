@@ -557,6 +557,11 @@ for batch in batch_size_list:       # slide the batch_size values
             del predictions                                 # clear to free memory
             del network                                     # clear to free memory
             
+        # print of the mean of result of the last k-cross validation done
+        loss_scores = np.average(result_dict[name]['loss'])
+        acc_scores = np.average(result_dict[name]['acc'])
+        print("K-cross validation of the " + name + "\nLoss mean :" ,loss_scores,"\nAccuracy mean : ",acc_scores)
+            
         # plot the confusion matrix
         rows = classes                                          # contain the label of the classes showed in the rowvalues of rows          
         columns = classes                                       # contain the label of the classes showed in the rowvalues of columns   
