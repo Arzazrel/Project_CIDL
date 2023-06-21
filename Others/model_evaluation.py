@@ -50,7 +50,7 @@ early_patience = [10,15,20]         # patience for early stopping in the trainin
 result_dict = {}                    # dictionary that contains results for each k-cross validation done
 network = None                      # contain the CNN model, default value is None
 truncate_set = False                # variable which indicates whether the sets (train, test,val) must be truncate or not when divided to batch_size
-model_name = "Ifrinet_v4"           # name of the model to test
+model_name = "AlexNet"           # name of the model to test
 
 # ---- dataset variables ----
 classes = []                        # the label associated with each class will be the position that the class name will have in this array
@@ -560,7 +560,7 @@ for batch in batch_size_list:       # slide the batch_size values
         # print of the mean of result of the last k-cross validation done
         loss_scores = np.average(result_dict[name]['loss'])
         acc_scores = np.average(result_dict[name]['acc'])
-        print("K-cross validation of the " + name + "\nLoss mean :" ,loss_scores,"\nAccuracy mean : ",acc_scores)
+        print("\n\nK-cross validation of the ", name ,"\nLoss mean :" ,loss_scores,"\nAccuracy mean : ",acc_scores ,"\n")
             
         # plot the confusion matrix
         rows = classes                                          # contain the label of the classes showed in the rowvalues of rows          
