@@ -222,8 +222,6 @@ def make_model():
                       metrics=['accuracy'])
 
     elif model_name == "Ifrinet_v4":
-        global network
-        
         inp = layers.Input(shape=(img_width, img_height, img_channel))                       # input
     
         net = layers.Conv2D(filters=16, kernel_size=(7, 7), strides=(2,2), padding='same', activation='relu')(inp)      # first conv layer

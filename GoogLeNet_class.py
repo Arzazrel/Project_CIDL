@@ -7,6 +7,7 @@ explanation: file containing the class that reproduces the GoogLeNet model
 description: network description at the end of the file
 """
 import tensorflow as tf
+import numpy as np
 import tensorflow.keras
 from tensorflow.keras import models
 from tensorflow.keras import layers
@@ -39,6 +40,7 @@ def inception_mod(in_net, fil_1x1, fil_1x1_3x3, fil_3x3, fil_1x1_5x5, fil_5x5, f
 
 # class that implement the GoogLeNet model
 class GoogLeNet:
+    
     # constructor
     def __init__(self,class_number):
         self.model = None                       # var that will contain the model of the CNN AlexNet
@@ -47,6 +49,7 @@ class GoogLeNet:
         self.img_height = 224                   # height of the images in input to CNN
         self.img_width = 224                    # width of the images in input to CNN
         self.img_channel = 3                    # channel of the images in input to CNN (RGB)
+        
         
     # method for make the model of the CNN. Due to the structure of the network (inception and parallel paths) it is better to use keras Models class instead of sequential
     def make_model(self):
@@ -104,11 +107,307 @@ class GoogLeNet:
                     losses.sparse_categorical_crossentropy,
                     losses.sparse_categorical_crossentropy],
               loss_weights=[1, 0.3, 0.3],
-              metrics=['accuracy','TruePositive','TrueNegative','FalsePositive','FalseNegative'])
+              metrics=['accuracy'])
+
+    # methd for take the training and validation set
+    def take_ds(self,t_image, t_labels, v_image, v_labels,truncate,batch_size):
+        # var ds
+        self.train_image = t_image          # var that contain images of training set
+        self.train_labels = t_labels        # var that contain labels of training set
+        self.val_image = v_image            # var that contain images of validation set
+        self.val_labels = v_labels          # var that contain labels of validation set
+        # var for truncate or not the sets
+        self.truncate_set = truncate
+        self.batch_size = batch_size
+
+        #print("train image: ",len(self.train_image), " train labels: ",len(self.train_labels))
+        #print("val image: ",len(self.val_image), " val labels: ",len(self.val_labels))
+
+    # method for fit the model (return history)
+    def fit_model(self,epoch):
+        # call the generator
+        # create TRAIN SET using generator function and specifying shapes and dtypes
+        t_img = tf.data.Dataset.from_generator(self.gen_train_image, 
+                                                 output_signature=(tf.TensorSpec(shape=(self.batch_size ,self.img_width , self.img_height , self.img_channel), dtype=tf.float32)))
+
+        t_lab = tf.data.Dataset.from_generator(self.gen_train_labels, 
+                                                 output_signature=(tf.TensorSpec(shape=(self.batch_size, self.num_classes), dtype=tf.float32)))
+        
+        t_train = tf.data.Dataset.from_generator(self.train_generator, 
+                                                 output_signature=(tf.TensorSpec(shape=(self.batch_size ,self.img_width , self.img_height , self.img_channel), dtype=tf.float32),
+                                                                   (tf.TensorSpec(shape=(self.batch_size, self.num_classes), dtype=tf.float32),
+                                                                    tf.TensorSpec(shape=(self.batch_size, self.num_classes), dtype=tf.float32),
+                                                                    tf.TensorSpec(shape=(self.batch_size, self.num_classes), dtype=tf.float32))))
+
+        t_train_1 = tf.data.Dataset.from_generator(self.train_generator, 
+                                                 output_signature=(tf.TensorSpec(shape=(self.batch_size ,self.img_width , self.img_height , self.img_channel), dtype=tf.float32),
+                                                                   tf.TensorSpec(shape=(3,self.batch_size,self.num_classes), dtype=tf.int32)))
+        t_train_1 = tf.data.Dataset.from_generator(self.train_generator,
+                                                   output_signature=(tf.TensorSpec(shape=(self.batch_size ,self.img_width , self.img_height , self.img_channel), dtype=tf.float32),
+                                                                   tf.TensorSpec(shape=(32,), dtype=tf.int32)))
+        t_train_2 = tf.data.Dataset.from_generator(self.train_generator, 
+                                                 output_signature=(tf.TensorSpec(shape=(self.batch_size ,self.img_width , self.img_height , self.img_channel), dtype=tf.float32),
+                                                                   tf.TensorSpec(shape=(32, 3,), dtype=tf.float32)))
+
+        v_img = self.gen_val_image()
+        v_lab = np.array(self.train_labels)
+        #mult_v_lab = np.array([self.train_labels,self.train_labels,self.train_labels])
+        #print("Shape di una labels: ", v_lab.shape, "Shape di multi labels: ", mult_v_lab.shape)
+        # fit the model
+        history = self.model.fit((t_img, t_lab), batch_size=self.batch_size, epochs=epoch)
+        #history = self.model.fit((t_img, [t_lab,t_lab,t_lab]), batch_size=self.batch_size, epochs=epoch)
+        #history = self.model.fit(t_train, batch_size=self.batch_size, epochs=epoch)
+        #history = self.model.fit(t_train_1, batch_size=self.batch_size, epochs=epoch)
+        #history = self.model.fit(t_train_2, batch_size=self.batch_size, epochs=epoch)
+        #history = self.model.fit(self.train_image,(self.train_labels,self.train_labels,self.train_labels), batch_size=self.batch_size, epochs=epoch)
+        #history = self.model.fit(self.train_image,self.train_labels, batch_size=self.batch_size, epochs=epoch)
+        #validation_data=(v_img, (v_lab, v_lab, v_lab))
+        #print("Item di history", history.items())
+        # 
         
     # method for return the model
     def return_model(self):
         return self.model
+
+    # ------------------------------------ start: generator ds methods ------------------------------------
+    def train_generator_1(self):
+        # create the tensor that will contain the data
+        img_tensor = []                                             # tensor that contain the images of one batch from the set
+        label_tensor = []                                           # tensor that contain the labels of one batch from the set
+        img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
+        label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
+    
+        if not self.truncate_set:                                        # check if it has to truncate or not the set
+            rest = self.batch_size - (len(self.train_image) % self.batch_size)     # check if the division by batch_size produce rest
+            #print("Training test rest: ",rest)
+        else:
+            rest = self.batch_size                                       # set always truncated
+        #print("lunghezza totale: ", len(total_train_image), " Batch_size: ",batch_size, " modulo: ",len(total_train_image) % batch_size, " mancante(rest): ",rest)
+        for idx in range(len(self.train_image)):                         # organize the sample in batch
+            # take one image and the corresponding labels
+            img = self.train_image[idx]                              
+            label = self.train_labels[idx]
+            # add new element and convert to TF tensors
+            img_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+            label_tensor.append(tf.convert_to_tensor([label[0],label[1],label[0],label[1],label[0],label[1]], dtype=tf.float32))
+        
+            if rest != self.batch_size and idx < rest:                   #check for the rest
+                #print("aggiungo elemento ",idx," al contenitore per riempire il batch size finale")
+                # add this sample for the future (sample in the rest)
+                img_rest_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+                label_rest_tensor.append(tf.convert_to_tensor([label[0],label[1],label[0],label[1],label[0],label[1]], dtype=tf.float32))
+
+            if len(img_tensor) == self.batch_size:                       # check to see if batch is full (reached batch_size)
+                yield img_tensor, label_tensor                      # return the batch
+                # clean list
+                img_tensor.clear()
+                label_tensor.clear()
+            
+            if idx == (len(self.train_image) - 1):                       # check if the set is finished, last batch
+                #print("arrivato alla fine")
+                if rest != self.batch_size:                              # check if there are rest to fix
+                    #print("Sono in ultimo batch\nLunghezza ad ora del batch: ",len(img_tensor))
+                    #there are samples that don't complete a batch, add rest sample to complete the last batch
+                    for i in range(rest):
+                        img_tensor.append(img_rest_tensor[i])
+                        label_tensor.append(label_rest_tensor[i])
+                    #print("Generator training set, arrivato a posizione: ",idx)
+                    yield img_tensor, label_tensor              # return the last batch
+    
+    def train_generator(self):
+        # create the tensor that will contain the data
+        img_tensor = []                                             # tensor that contain the images of one batch from the set
+        label_tensor = []                                           # tensor that contain the labels of one batch from the set
+        img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
+        label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
+    
+        if not self.truncate_set:                                        # check if it has to truncate or not the set
+            rest = self.batch_size - (len(self.train_image) % self.batch_size)     # check if the division by batch_size produce rest
+            #print("Training test rest: ",rest)
+        else:
+            rest = self.batch_size                                       # set always truncated
+        #print("lunghezza totale: ", len(total_train_image), " Batch_size: ",batch_size, " modulo: ",len(total_train_image) % batch_size, " mancante(rest): ",rest)
+        for idx in range(len(self.train_image)):                         # organize the sample in batch
+            # take one image and the corresponding labels
+            img = self.train_image[idx]                              
+            label = self.train_labels[idx]
+            # add new element and convert to TF tensors
+            img_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+            label_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+        
+            if rest != self.batch_size and idx < rest:                   #check for the rest
+                #print("aggiungo elemento ",idx," al contenitore per riempire il batch size finale")
+                # add this sample for the future (sample in the rest)
+                img_rest_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+                label_rest_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+
+            if len(img_tensor) == self.batch_size:                       # check to see if batch is full (reached batch_size)
+                yield img_tensor, np.array([label_tensor,label_tensor,label_tensor])                      # return the batch
+                # clean list
+                img_tensor.clear()
+                label_tensor.clear()
+            
+            if idx == (len(self.train_image) - 1):                       # check if the set is finished, last batch
+                #print("arrivato alla fine")
+                if rest != self.batch_size:                              # check if there are rest to fix
+                    #print("Sono in ultimo batch\nLunghezza ad ora del batch: ",len(img_tensor))
+                    #there are samples that don't complete a batch, add rest sample to complete the last batch
+                    for i in range(rest):
+                        img_tensor.append(img_rest_tensor[i])
+                        label_tensor.append(label_rest_tensor[i])
+                    #print("Generator training set, arrivato a posizione: ",idx)
+                    yield img_tensor, np.array([label_tensor,label_tensor,label_tensor])              # return the last batch
+
+    # define generator function to do the training set images
+    def gen_train_image(self):
+        # create the tensor that will contain the data
+        img_tensor = []                                             # tensor that contain the images of one batch from the set
+        img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
+    
+        if not self.truncate_set:                                        # check if it has to truncate or not the set
+            rest = self.batch_size - (len(self.train_image) % self.batch_size)     # check if the division by batch_size produce rest
+            #print("Training test rest: ",rest)
+        else:
+            rest = self.batch_size                                       # set always truncated
+        #print("lunghezza totale: ", len(total_train_image), " Batch_size: ",batch_size, " modulo: ",len(total_train_image) % batch_size, " mancante(rest): ",rest)
+        for idx in range(len(self.train_image)):                         # organize the sample in batch
+            # take one image
+            img = self.train_image[idx]                              
+            # add new element and convert to TF tensors
+            img_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+        
+            if rest != self.batch_size and idx < rest:                   #check for the rest
+                #print("aggiungo elemento ",idx," al contenitore per riempire il batch size finale")
+                # add this sample for the future (sample in the rest)
+                img_rest_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+
+            if len(img_tensor) == self.batch_size:          # check to see if batch is full (reached batch_size)
+                yield img_tensor                            # return the batch
+                img_tensor.clear()                          # clean list
+            
+            if idx == (len(self.train_image) - 1):                  # check if the set is finished, last batch
+                #print("arrivato alla fine")
+                if rest != self.batch_size:                         # check if there are rest to fix
+                    #print("Sono in ultimo batch\nLunghezza ad ora del batch: ",len(img_tensor))
+                    #there are samples that don't complete a batch, add rest sample to complete the last batch
+                    for i in range(rest):
+                        img_tensor.append(img_rest_tensor[i])
+                    #print("Generator training set, arrivato a posizione: ",idx)
+                    yield img_tensor                                # return the last batch
+
+    # define generator function to do the training set labels
+    def gen_train_labels(self):
+        # create the tensor that will contain the data
+        label_tensor = []                                           # tensor that contain the labels of one batch from the set
+        label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
+    
+        if not self.truncate_set:                                        # check if it has to truncate or not the set
+            rest = self.batch_size - (len(self.train_labels) % self.batch_size)     # check if the division by batch_size produce rest
+            #print("Training test rest: ",rest)
+        else:
+            rest = self.batch_size                                       # set always truncated
+        #print("lunghezza totale: ", len(total_train_image), " Batch_size: ",batch_size, " modulo: ",len(total_train_image) % batch_size, " mancante(rest): ",rest)
+        for idx in range(len(self.train_labels)):                        # organize the sample in batch
+            # take one image and the corresponding labels]                              
+            label = self.train_labels[idx]
+            # add new element and convert to TF tensors
+            label_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+        
+            if rest != self.batch_size and idx < rest:                   #check for the rest
+                #print("aggiungo elemento ",idx," al contenitore per riempire il batch size finale")
+                # add this sample for the future (sample in the rest)
+                label_rest_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+
+            if len(img_tensor) == self.batch_size:                       # check to see if batch is full (reached batch_size)
+                yield label_tensor                      # return the batch
+                label_tensor.clear()                    # clean list
+            
+            if idx == (len(self.train_labels) - 1):                      # check if the set is finished, last batch
+                #print("arrivato alla fine")
+                if rest != self.batch_size:                              # check if there are rest to fix
+                    #print("Sono in ultimo batch\nLunghezza ad ora del batch: ",len(img_tensor))
+                    #there are samples that don't complete a batch, add rest sample to complete the last batch
+                    for i in range(rest):
+                        label_tensor.append(label_rest_tensor[i])
+                    #print("Generator training set, arrivato a posizione: ",idx)
+                    yield label_tensor                 # return the last batch
+
+    # define generator function to do the validation set images
+    def gen_val_image(self):
+        # create the tensor that will contain the data
+        img_tensor = []                                             # tensor that contain the images of one batch from the set
+        img_rest_tensor = []                                        # tensor that contain the residual images (case where size/batch_size has a rest) from the set
+    
+        if not self.truncate_set:                                        # check if it has to truncate or not the set
+            rest = self.batch_size - (len(self.val_image) % self.batch_size)     # check if the division by batch_size produce rest
+            #print("Training test rest: ",rest)
+        else:
+            rest = self.batch_size                                       # set always truncated
+        #print("lunghezza totale: ", len(total_train_image), " Batch_size: ",batch_size, " modulo: ",len(total_train_image) % batch_size, " mancante(rest): ",rest)
+        for idx in range(len(self.val_image)):                         # organize the sample in batch
+            # take one image
+            img = self.val_image[idx]                              
+            # add new element and convert to TF tensors
+            img_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+        
+            if rest != self.batch_size and idx < rest:                   #check for the rest
+                #print("aggiungo elemento ",idx," al contenitore per riempire il batch size finale")
+                # add this sample for the future (sample in the rest)
+                img_rest_tensor.append(tf.convert_to_tensor(img, dtype=tf.float32))
+
+            if len(img_tensor) == self.batch_size:          # check to see if batch is full (reached batch_size)
+                yield img_tensor                            # return the batch
+                img_tensor.clear()                          # clean list
+            
+            if idx == (len(self.val_image) - 1):                  # check if the set is finished, last batch
+                #print("arrivato alla fine")
+                if rest != self.batch_size:                         # check if there are rest to fix
+                    #print("Sono in ultimo batch\nLunghezza ad ora del batch: ",len(img_tensor))
+                    #there are samples that don't complete a batch, add rest sample to complete the last batch
+                    for i in range(rest):
+                        img_tensor.append(img_rest_tensor[i])
+                    #print("Generator training set, arrivato a posizione: ",idx)
+                    yield img_tensor                                # return the last batch
+
+    # define generator function to do the validation set labels
+    def gen_val_labels(self):
+        # create the tensor that will contain the data
+        label_tensor = []                                           # tensor that contain the labels of one batch from the set
+        label_rest_tensor = []                                      # tensor that contain the residual labels (case where size/batch_size has a rest) from the set
+    
+        if not self.truncate_set:                                        # check if it has to truncate or not the set
+            rest = self.batch_size - (len(self.val_labels) % self.batch_size)     # check if the division by batch_size produce rest
+            #print("Training test rest: ",rest)
+        else:
+            rest = self.batch_size                                       # set always truncated
+        #print("lunghezza totale: ", len(total_train_image), " Batch_size: ",batch_size, " modulo: ",len(total_train_image) % batch_size, " mancante(rest): ",rest)
+        for idx in range(len(self.val_labels)):                        # organize the sample in batch
+            # take one image and the corresponding labels]                              
+            label = self.val_labels[idx]
+            # add new element and convert to TF tensors
+            label_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+        
+            if rest != self.batch_size and idx < rest:                   #check for the rest
+                #print("aggiungo elemento ",idx," al contenitore per riempire il batch size finale")
+                # add this sample for the future (sample in the rest)
+                label_rest_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
+
+            if len(img_tensor) == self.batch_size:                       # check to see if batch is full (reached batch_size)
+                yield label_tensor                      # return the batch
+                label_tensor.clear()                    # clean list
+            
+            if idx == (len(self.val_labels) - 1):                      # check if the set is finished, last batch
+                #print("arrivato alla fine")
+                if rest != self.batch_size:                              # check if there are rest to fix
+                    #print("Sono in ultimo batch\nLunghezza ad ora del batch: ",len(img_tensor))
+                    #there are samples that don't complete a batch, add rest sample to complete the last batch
+                    for i in range(rest):
+                        label_tensor.append(label_rest_tensor[i])
+                    #print("Generator training set, arrivato a posizione: ",idx)
+                    yield label_tensor                  # return the last batch
+    # ------------------------------------ end: generator ds methods ------------------------------------
+
+
     
 """
 brief description:
