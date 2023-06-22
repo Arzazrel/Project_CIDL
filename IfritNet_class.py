@@ -37,7 +37,7 @@ def inception_mod(in_net, fil_1x1, fil_1x1_3x3, fil_3x3, fil_1x1_5x5, fil_5x5, f
 # ------------------------------------ end: utility methods ------------------------------------
 
 # class that implement the IfriNet models
-class IfriNet:
+class IfritNet:
     # constructor
     def __init__(self,class_number):
         self.model = None                       # var that will contain the model of the CNN AlexNet

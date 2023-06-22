@@ -50,7 +50,7 @@ early_patience = [10,15,20]         # patience for early stopping in the trainin
 result_dict = {}                    # dictionary that contains results for each k-cross validation done
 network = None                      # contain the CNN model, default value is None
 truncate_set = False                # variable which indicates whether the sets (train, test,val) must be truncate or not when divided to batch_size
-model_name = "Ifrinet_v1"           # name of the model to test
+model_name = "IfritNet_v3"           # name of the model to test
 
 # ---- dataset variables ----
 classes = []                        # the label associated with each class will be the position that the class name will have in this array
@@ -127,7 +127,7 @@ def make_model():
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
     # ---- IfriNet Models ----
-    elif model_name == "Ifrinet_v1":
+    elif model_name == "IfritNet_v1":
         network = models.Sequential()                                   # rete del modello
         # 1st Conv layer
         network.add(layers.Conv2D(filters=32, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(img_width, img_height, img_channel)))
@@ -157,7 +157,7 @@ def make_model():
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
 
-    elif model_name == "Ifrinet_v2":
+    elif model_name == "IfritNet_v2":
         network = models.Sequential()
         # 1st Conv layer
         network.add(layers.Conv2D(filters=32, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(img_width, img_height, img_channel)))
@@ -189,7 +189,7 @@ def make_model():
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
 
-    elif model_name == "Ifrinet_v3":
+    elif model_name == "IfritNet_v3":
         network = models.Sequential()
         # 1st Conv layer
         network.add(layers.Conv2D(filters=16, kernel_size=(7, 7), strides=(3,3), padding='valid', activation='relu', input_shape=(img_width, img_height, img_channel)))
@@ -221,7 +221,7 @@ def make_model():
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
 
-    elif model_name == "Ifrinet_v4":
+    elif model_name == "IfritNet_v4":
         inp = layers.Input(shape=(img_width, img_height, img_channel))                       # input
     
         net = layers.Conv2D(filters=16, kernel_size=(7, 7), strides=(2,2), padding='same', activation='relu')(inp)      # first conv layer
@@ -596,11 +596,11 @@ list_loss = []                                                  # contain the me
 
 # do the mean value for loss and accuracy per each pairs of parameters tested
 for pair in list_pair_param:
-    print("Prima della media\nresult of" + pair + " :" ,result_dict[pair]['loss'] , " : ",result_dict[pair]['acc'])
+    print("Before the mean\nresult of" + pair + " :" ,result_dict[pair]['loss'] , " : ",result_dict[pair]['acc'])
     # validation score: average of the validation scores of the k folds
     loss_scores = np.average(result_dict[pair]['loss'])
     acc_scores = np.average(result_dict[pair]['acc'])
-    print("Dopo della media\nresult of" + name + " :" ,loss_scores," : ",acc_scores)
+    print("After the mean\nresult of" + name + " :" ,loss_scores," : ",acc_scores)
     list_acc.append(acc_scores)                                                
     list_loss.append(loss_scores)
     
