@@ -600,7 +600,7 @@ for pair in list_pair_param:
     # validation score: average of the validation scores of the k folds
     loss_scores = np.average(result_dict[pair]['loss'])
     acc_scores = np.average(result_dict[pair]['acc'])
-    print("After the mean\nresult of" + name + " :" ,loss_scores," : ",acc_scores)
+    print("After the mean\nresult of" + pair + " :" ,loss_scores," : ",acc_scores)
     list_acc.append(acc_scores)                                                
     list_loss.append(loss_scores)
     
