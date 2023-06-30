@@ -61,7 +61,8 @@ val_img = []                        # contain the images choosen as validation s
 val_label = []                      # contain the labels of the images choosen as validation set in fit
 test_image = []                     # contain the images choosen as test set in evaluation
 test_label = []                     # contain the labels of the images choosen as test set in evaluation
-val_set_split = 0.3                 # validation set size as a percentage of the training set
+test_set_split = 0.2                # test set size as a percentage of the whole dataset
+val_set_split = 0.2                 # validation set size as a percentage of the training set
 
 # ---- path variables ----
 path_dir_ds = os.path.join("Dataset","new_ds","Train_DS")                       # folder in which there are the image ds for training
@@ -146,6 +147,35 @@ def model_builder(hp):
 
   return model
 
+# ------------------------------------ start: method for plot results ------------------------------------
+# method to plot accuracy and loss. arc is a dictionary with the results, 'mode' if is '0': there are fit results, if is '1': there are evaluation results
+def plot_fit_result(arc,mode):
+    result_dict = {}                    # dict that will contain the results to plot with the correct label/title
+    # check what results there are
+    if mode == 0:                       # method called with fit results
+        result_dict["loss (training set)"] = arc["loss"]                    # take loss values (training set)
+        result_dict["accuracy (taining set)"] = arc["accuracy"]             # take accuracy values (training set)
+        if arc.get("val_loss") is not None:                         # check if there are result of validation set
+            result_dict["loss (validation set)"] = arc["val_loss"]          # take loss values (validation set)
+            result_dict["accuracy (validation set)"] = arc["val_accuracy"]  # take accuracy values (validation set)
+    elif mode == 1:                     # method called with evaluate results
+        result_dict["loss (test set)"] = arc["loss"]                        # take loss values (test set)
+        result_dict["accuracy (test set)"] = arc["accuracy"]                # take accuracy values (test set)
+    # plot the results
+    for k,v in result_dict.items():
+        #print("chiave: ", k," value: ",v)
+        plot(k,v)
+
+# method to display a plot. 'title' is the tile of the plot, 'value_list' is a list of value to draw in the plot
+def plot(title,value_list):
+    fig = plt.figure()
+    fig.gca().yaxis.set_major_locator(MaxNLocator(integer=True))    # force the label of  number of epochs to be integer
+    plt.plot(value_list,'o-b')
+    plt.title(str(title))               # plot title
+    plt.xlabel("# Epochs")              # x axis title
+    plt.ylabel("Value")                 # y axis title
+    plt.show()
+# ------------------------------------ end: method for plot results ------------------------------------
 #GPU_check()
 """
 # -------- load the dataset --------
@@ -181,43 +211,65 @@ print("Requied memory for images ds: ",total_image_ds.size * total_image_ds.item
 #total_image_ds = total_image_ds.astype('float32') / 255                                         # normalization
 #total_labels_ds = to_categorical(total_labels_ds,num_classes=len(classes))                # transform label in categorical format
 """
-train_data , val_data = keras.utils.image_dataset_from_directory(
+train_val_data , test_data = keras.utils.image_dataset_from_directory(
                   directory=path_ds,
                   labels= 'inferred',
                   label_mode='categorical',
                   color_mode='rgb',
                   batch_size=batch_size,
-                  validation_split = val_set_split,
+                  validation_split = test_set_split,
                   subset = "both",
                   seed=777,
                   shuffle=True,
                   image_size=(img_width, img_height) )
 
-print("Dimensione train: ",len(train_data), " dimensione val data: ", len(val_data))        # dimensione in batch
-batch_train_set = train_data
-batch_test_set = 
+# size of the subdivisions of the various sets of the entire dataset, measured in batch size
+batch_train_val_size = len(train_val_data)                              #
+batch_train_size = int( (1 - val_set_split) * batch_train_val_size)
+batch_val_size = batch_train_val_size - batch_train_size
+batch_test_size = len(test_data)
+
+# division of data into sets
+train_data = train_val_data.take(batch_train_size)
+val_data = train_val_data.skip(batch_train_size)
+
+# control check print
+print("Dimension check print of the sets (measured in batch)")
+print("val_train_dimension: ", batch_train_val_size)
+print("Training set dimension: ",batch_train_size, " val set dimension: ", batch_val_size, " test set dimension: ", batch_test_size)        # dimensione in batch
 
 # check print of the first batch_size from training and validation set, tha batch size must be divisible by 4
 # print first batch of training set
-plt.figure(figsize=(10, 10))
+plt.figure(figsize=(7, 7))
 for images, labels in train_data.take(1):
   for i in range(batch_size):
     ax = plt.subplot(4, batch_size // 4, i + 1)
     plt.imshow(images[i].numpy().astype("uint8"))
-    plt.title(train_data.class_names[np.argmax(labels[i])])
+    plt.title(train_val_data.class_names[np.argmax(labels[i])])
     plt.axis("off")
 plt.suptitle('First batch of training set')
 plt.show()
 
 # print first batch of validation set
 plt.figure(figsize=(10, 10))
-for images, labels in train_data.take(1):
+for images, labels in val_data.take(1):
   for i in range(batch_size):
     ax = plt.subplot(4, batch_size // 4, i + 1)
     plt.imshow(images[i].numpy().astype("uint8"))
-    plt.title(train_data.class_names[np.argmax(labels[i])])
+    plt.title(train_val_data.class_names[np.argmax(labels[i])])
     plt.axis("off")
 plt.suptitle('First batch of validation set')
+plt.show()
+
+# print first batch of test set
+plt.figure(figsize=(10, 10))
+for images, labels in test_data.take(1):
+  for i in range(batch_size):
+    ax = plt.subplot(4, batch_size // 4, i + 1)
+    plt.imshow(images[i].numpy().astype("uint8"))
+    plt.title(test_data.class_names[np.argmax(labels[i])])
+    plt.axis("off")
+plt.suptitle('First batch of test set')
 plt.show()
 
 tuner = kt.Hyperband(model_builder,
@@ -244,22 +296,11 @@ best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
 print(f"The hyperparameter search is complete. \
         The optimal number of dropout in the last layer is {best_hps.get('dropout')} and \
         the optimal learning rate for the optimizer is {best_hps.get('learning_rate')}.")
-"""   
-# Build the model with the optimal hyperparameters and train it on the data for 50 epochs
-model = tuner.hypermodel.build(best_hps)
-#history = model.fit(train_image, train_label, epochs=epochs, validation_split=val_set_split)
-history = model.fit(train_data, epochs=epochs, validation_data=val_data, callbacks=[checkpoint, eStop])
-
-val_acc_per_epoch = history.history['val_accuracy']
-best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
-print('Best epoch: %d' % (best_epoch,))
-
+ 
+# Build the model with the optimal hyperparameters and train it on the data 
 hypermodel = tuner.hypermodel.build(best_hps)
-
-# Retrain the model
 #hypermodel.fit(img_train, label_train, epochs=best_epoch, validation_split=0.2)
-hypermodel.fit(train_data, epochs=best_epoch, validation_data=val_data, callbacks=[checkpoint, eStop])
+hypermodel.fit(train_data, epochs=epochs, validation_data=val_data, callbacks=[checkpoint, eStop])
 
-eval_result = hypermodel.evaluate(img_test, label_test)
+eval_result = hypermodel.evaluate(test_data)
 print("[test loss, test accuracy]:", eval_result)
-"""
