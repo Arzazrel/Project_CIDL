@@ -44,21 +44,14 @@ img_height = 224                    # height of the images in input to CNN
 img_width = 224                     # width of the images in input to CNN
 img_channel = 3                     # channel of the images in input to CNN     
 epochs = 100                        # number of epochs of the training
-k = 10                              # number of the fold of the k-cross validation
-batch_size = 32                     # indicate the actual value of batch_size used in training
-early_patience = 20                 # patience for early stopping in the training
+batch_size = 128                    # indicate the actual value of batch_size used in training
+early_patience = 15                 # patience for early stopping in the training
 result_dict = {}                    # dictionary that contains results for each k-cross validation done
 network = None                      # contain the CNN model, default value is None
 truncate_set = False                # variable which indicates whether the sets (train, test,val) must be truncate or not when divided to batch_size
 
 # ---- dataset variables ----
 classes = []                        # the label associated with each class will be the position that the class name will have in this array
-total_image_ds = []                 # contain the total image dataset
-total_labels_ds = []                # contain the labels of the total image dataset
-train_image = []                    # contain the images choosen as train set in fit
-train_label = []                    # contain the labels of the images choosen as train set in fit
-val_img = []                        # contain the images choosen as validation set in fit
-val_label = []                      # contain the labels of the images choosen as validation set in fit
 test_image = []                     # contain the images choosen as test set in evaluation
 test_label = []                     # contain the labels of the images choosen as test set in evaluation
 test_set_split = 0.2                # test set size as a percentage of the whole dataset
@@ -238,12 +231,51 @@ print("Dimension check print of the sets (measured in batch)")
 print("val_train_dimension: ", batch_train_val_size)
 print("Training set dimension: ",batch_train_size, " val set dimension: ", batch_val_size, " test set dimension: ", batch_test_size)        # dimensione in batch
 
+# convert in np.array
+numpy = test_data.as_numpy_iterator()               # return a numpy iterator
+i = 0
+# slide the iterator, this is divided by batch
+for batch in numpy:
+    # each batch is divided in 2 list: one for images and one for labels
+    print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    print("Batch num: ", i ,"\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    #print(batch)
+    #print("imm:" , batch[0], "label ", batch[1])
+    #print("dimension of images: ",len(batch[0]),"\ndimension of labels: ",len(batch[1]))
+    j = 0
+    # slide the images of the current batch
+    for img in batch[0]:
+        #print("img num: ",j,"\n",img,"\n\n")
+        test_image.append(img)              # add image to test_image 
+        # update value of j
+        j += 1
+    j = 0
+    # slide the labels of the current batch
+    for label in batch[1]:
+        print("label num: ",j,"\n",label,"\n\n")
+        test_label.append(label)            # add correlated label to test_label
+        # update value of j
+        j += 1
+    i += 1
+print("Num of batches: ",i)
+
+# convert in np.array
+test_image = np.array(test_image)
+test_label = np.array(test_label)
+# control data print
+print("test_image",len(test_image), test_image.shape)
+print("test_label",len(test_label), test_label.shape)
+print("Requied memory for images in test set: ",test_image.size * test_image.itemsize / 10**9," GB")
+# preprocessing
+#total_image_ds = total_image_ds.astype('float32') / 255                                         # normalization
+
+"""
 # check print of the first batch_size from training and validation set, tha batch size must be divisible by 4
 # print first batch of training set
-plt.figure(figsize=(7, 7))
+plt.figure(figsize=(9, 6))
 for images, labels in train_data.take(1):
   for i in range(batch_size):
-    ax = plt.subplot(4, batch_size // 4, i + 1)
+    ax = plt.subplot(16, batch_size // 16, i + 1)
     plt.imshow(images[i].numpy().astype("uint8"))
     plt.title(train_val_data.class_names[np.argmax(labels[i])])
     plt.axis("off")
@@ -251,10 +283,10 @@ plt.suptitle('First batch of training set')
 plt.show()
 
 # print first batch of validation set
-plt.figure(figsize=(10, 10))
+plt.figure(figsize=(9, 6))
 for images, labels in val_data.take(1):
   for i in range(batch_size):
-    ax = plt.subplot(4, batch_size // 4, i + 1)
+    ax = plt.subplot(16, batch_size // 16, i + 1)
     plt.imshow(images[i].numpy().astype("uint8"))
     plt.title(train_val_data.class_names[np.argmax(labels[i])])
     plt.axis("off")
@@ -262,10 +294,10 @@ plt.suptitle('First batch of validation set')
 plt.show()
 
 # print first batch of test set
-plt.figure(figsize=(10, 10))
+plt.figure(figsize=(9, 6))
 for images, labels in test_data.take(1):
   for i in range(batch_size):
-    ax = plt.subplot(4, batch_size // 4, i + 1)
+    ax = plt.subplot(16, batch_size // 16, i + 1)
     plt.imshow(images[i].numpy().astype("uint8"))
     plt.title(test_data.class_names[np.argmax(labels[i])])
     plt.axis("off")
@@ -285,7 +317,7 @@ eStop = EarlyStopping(patience = early_patience, verbose = 1, restore_best_weigh
 
 #tensorboard = keras.callbacks.TensorBoard(log_dir)
 #tuner.search(train_image, train_label, epochs=epochs, validation_split=val_set_split, callbacks=[eStop])
-tuner.search(train_data, epochs=epochs, validation_data=val_data, callbacks=[eStop])
+tuner.search(train_data, epochs=epochs, validation_data=val_data, callbacks=[checkpoint, eStop])
 
 # Print the tuner value name
 #print("Tuner value name: ",tuner.get_best_hyperparameters()[0].values)
@@ -300,7 +332,14 @@ print(f"The hyperparameter search is complete. \
 # Build the model with the optimal hyperparameters and train it on the data 
 hypermodel = tuner.hypermodel.build(best_hps)
 #hypermodel.fit(img_train, label_train, epochs=best_epoch, validation_split=0.2)
-hypermodel.fit(train_data, epochs=epochs, validation_data=val_data, callbacks=[checkpoint, eStop])
+history = hypermodel.fit(train_data, epochs=epochs, validation_data=val_data, callbacks=[checkpoint, eStop])
 
-eval_result = hypermodel.evaluate(test_data)
-print("[test loss, test accuracy]:", eval_result)
+plot_fit_result(history.history,0)                  # visualize the value for the fit - history.history is a dictionary - call method for plot train result
+#confusion_matrix()                                  # call method to obtain the confusion matrix
+
+test_loss, test_acc = hypermodel.evaluate(test_data)
+dict_metrics = {'loss': test_loss, 'accuracy': test_acc}                            # create a dictionary contain the metrics
+plot_fit_result(dict_metrics,1)      
+print("[test loss, test accuracy]:", test_loss, test_acc)
+"""
+
