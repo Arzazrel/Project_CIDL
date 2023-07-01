@@ -47,8 +47,7 @@ epochs = 100                        # number of epochs of the training
 batch_size = 128                    # indicate the actual value of batch_size used in training
 early_patience = 15                 # patience for early stopping in the training
 result_dict = {}                    # dictionary that contains results for each k-cross validation done
-network = None                      # contain the CNN model, default value is None
-truncate_set = False                # variable which indicates whether the sets (train, test,val) must be truncate or not when divided to batch_size
+hypermodel = None                   # contain the CNN model, default value is None
 
 # ---- dataset variables ----
 classes = []                        # the label associated with each class will be the position that the class name will have in this array
@@ -168,42 +167,57 @@ def plot(title,value_list):
     plt.xlabel("# Epochs")              # x axis title
     plt.ylabel("Value")                 # y axis title
     plt.show()
+    
+# method for create and plot the confusion metrix of the model trained
+def confusion_matrix():
+    global test_image, test_label, hypermodel, classes # global variables references
+    # create the confusion matrix, rows indicate the real class and columns indicate the predicted class 
+    conf_matrix = np.zeros((len(classes),len(classes)))     # at begin values are 0
+    
+    test_loss, test_acc = hypermodel.evaluate(test_image, test_label)    
+    
+    predictions = hypermodel.predict(test_image)               # get the output for each sample of the test set
+    # slide the prediction result and go to create the confusion matrix
+    for i in range(len(test_image)):
+        # test_label[i] indicate the real value of the label associated at the test_image[i] -> is real class (row)
+        # predictions[i] indicate the class value predicted by the model for the test_image[i] -> is predicted class (column)
+        # the values are in categorical format, translate in int
+        conf_matrix[np.argmax(test_label[i])][np.argmax(predictions[i])] += 1                              # update value
+        
+    # do percentages of confusion matrix
+    conf_matrix_perc = [[None for c in range(conf_matrix.shape[1])] for r in range(conf_matrix.shape[0])]  # define matrix
+    
+    for i in range(conf_matrix.shape[0]):                   # rows
+        for j in range(conf_matrix.shape[1]):               # columns
+            conf_matrix_perc[i][j] = " (" + str( round( (conf_matrix[i][j]/len(test_image))*100 ,2) ) + "%)"    # calculate percentage value
+    
+    # plot the confusion matrix
+    rows = classes                                          # contain the label of the classes showed in the row values of rows          
+    columns = classes                                       # contain the label of the classes showed in the row values of columns   
+
+    fig, ax = plt.subplots(figsize=(7.5, 7))
+    ax.matshow(conf_matrix, cmap=plt.cm.Blues, alpha=0.3)
+    # Show all ticks and label them with the respective list entries
+    ax.set_xticks(np.arange(len(columns)), labels=columns)
+    ax.set_yticks(np.arange(len(rows)), labels=rows)
+    
+    for i in range(len(rows)):                              # rows
+        for j in range(len(columns)):                       # columns
+            # give the value in the confusion matrix
+            ax.text(x=j, y=i, s=str(str(conf_matrix[i][j])+conf_matrix_perc[i][j]),
+                           ha="center", va="center", size='x-large')
+            
+    plt.xlabel('Predictions', fontsize=18)
+    plt.ylabel('Real', fontsize=18)
+    plt.title('Confusion Matrix', fontsize=18)
+    plt.show()   
 # ------------------------------------ end: method for plot results ------------------------------------
 #GPU_check()
-"""
-# -------- load the dataset --------
+# assign value to classes
 for folder in list_dir_ds:                      # for each folder in DS
     classes.append(str(folder))                 # update classes
-    index = classes.index(str(folder))          # take index of classes, is teh label of this class
-    p = os.path.join(path_ds,folder)            # path of each folder
-    #creating a collection with the available images
-    for filename in os.listdir(p):                      # for each images on the current folder
-        img = cv2.imread(os.path.join(p,filename))      # take current iamge
-        if img is not None:                             # check image taken
-            #check if the image is in the correct shape for the CNN (shape specified in the global variables)
-            if img.shape != (img_width, img_height, img_channel):       
-                dim = (img_height ,img_width)
-                resize_img = cv2.resize(img, dim, interpolation= cv2.INTER_AREA)  # resize the image
-                total_image_ds.append(resize_img)                                   # add image to total_image_ds
-                total_labels_ds.append(index)                                       # add correlated label to total_lael_ds
-            else:
-                total_image_ds.append(img)                                          # add image to total_image_ds
-                total_labels_ds.append(index)                                       # add correlated label to total_lael_ds
-        else:
-            print("Errore nel caricare immagine ",filename)
-
-# convert in np.array
-total_image_ds = np.array(total_image_ds)
-total_labels_ds = np.array(total_labels_ds)
-# control data print
-print("Num of classes: ",len(classes))
-print("total_image_ds",len(total_image_ds), total_image_ds.shape)
-print("total_labels_ds",len(total_labels_ds), total_labels_ds.shape)
-print("Requied memory for images ds: ",total_image_ds.size * total_image_ds.itemsize / 10**9," GB")
-# preprocessing
-#total_image_ds = total_image_ds.astype('float32') / 255                                         # normalization
-#total_labels_ds = to_categorical(total_labels_ds,num_classes=len(classes))                # transform label in categorical format
-"""
+            
+# load the whole dataset
 train_val_data , test_data = keras.utils.image_dataset_from_directory(
                   directory=path_ds,
                   labels= 'inferred',
@@ -226,38 +240,26 @@ batch_test_size = len(test_data)
 train_data = train_val_data.take(batch_train_size)
 val_data = train_val_data.skip(batch_train_size)
 
-# control check print
+# control check print of the sets
 print("Dimension check print of the sets (measured in batch)")
 print("val_train_dimension: ", batch_train_val_size)
 print("Training set dimension: ",batch_train_size, " val set dimension: ", batch_val_size, " test set dimension: ", batch_test_size)        # dimensione in batch
 
 # convert in np.array
 numpy = test_data.as_numpy_iterator()               # return a numpy iterator
-i = 0
+
 # slide the iterator, this is divided by batch
 for batch in numpy:
     # each batch is divided in 2 list: one for images and one for labels
-    print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    print("Batch num: ", i ,"\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    #print(batch)
-    #print("imm:" , batch[0], "label ", batch[1])
-    #print("dimension of images: ",len(batch[0]),"\ndimension of labels: ",len(batch[1]))
-    j = 0
-    # slide the images of the current batch
+    #print("imm:" , batch[0], "label ", batch[1])                                           # check print of the whole batch divided by images and labels
+    #print("dimension of images: ",len(batch[0]),"\ndimension of labels: ",len(batch[1]))   # check print for the length of the images and label in the batch, the number of images and labels must be equal to each other and must be batch size
+    
+    # slide the images of the current batch (first list batch[0])
     for img in batch[0]:
-        #print("img num: ",j,"\n",img,"\n\n")
         test_image.append(img)              # add image to test_image 
-        # update value of j
-        j += 1
-    j = 0
-    # slide the labels of the current batch
+    # slide the labels of the current batch (second list batch[1])
     for label in batch[1]:
-        print("label num: ",j,"\n",label,"\n\n")
         test_label.append(label)            # add correlated label to test_label
-        # update value of j
-        j += 1
-    i += 1
-print("Num of batches: ",i)
 
 # convert in np.array
 test_image = np.array(test_image)
@@ -267,7 +269,7 @@ print("test_image",len(test_image), test_image.shape)
 print("test_label",len(test_label), test_label.shape)
 print("Requied memory for images in test set: ",test_image.size * test_image.itemsize / 10**9," GB")
 # preprocessing
-#total_image_ds = total_image_ds.astype('float32') / 255                                         # normalization
+#test_image = test_image.astype('float32') / 255                                         # normalization
 
 """
 # check print of the first batch_size from training and validation set, tha batch size must be divisible by 4
@@ -303,7 +305,7 @@ for images, labels in test_data.take(1):
     plt.axis("off")
 plt.suptitle('First batch of test set')
 plt.show()
-
+"""
 tuner = kt.Hyperband(model_builder,
                      objective='val_accuracy',
                      max_epochs=100,
@@ -315,13 +317,11 @@ checkpoint = ModelCheckpoint(filepath = path_check_point_model+"/check_I4Learn.h
 
 eStop = EarlyStopping(patience = early_patience, verbose = 1, restore_best_weights = True, monitor='val_loss')
 
-#tensorboard = keras.callbacks.TensorBoard(log_dir)
 #tuner.search(train_image, train_label, epochs=epochs, validation_split=val_set_split, callbacks=[eStop])
 tuner.search(train_data, epochs=epochs, validation_data=val_data, callbacks=[checkpoint, eStop])
 
 # Print the tuner value name
 #print("Tuner value name: ",tuner.get_best_hyperparameters()[0].values)
-
 # Get the optimal hyperparameters
 best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
 
@@ -331,15 +331,15 @@ print(f"The hyperparameter search is complete. \
  
 # Build the model with the optimal hyperparameters and train it on the data 
 hypermodel = tuner.hypermodel.build(best_hps)
-#hypermodel.fit(img_train, label_train, epochs=best_epoch, validation_split=0.2)
 history = hypermodel.fit(train_data, epochs=epochs, validation_data=val_data, callbacks=[checkpoint, eStop])
 
 plot_fit_result(history.history,0)                  # visualize the value for the fit - history.history is a dictionary - call method for plot train result
-#confusion_matrix()                                  # call method to obtain the confusion matrix
 
 test_loss, test_acc = hypermodel.evaluate(test_data)
 dict_metrics = {'loss': test_loss, 'accuracy': test_acc}                            # create a dictionary contain the metrics
 plot_fit_result(dict_metrics,1)      
 print("[test loss, test accuracy]:", test_loss, test_acc)
-"""
+
+confusion_matrix()                                  # call method to obtain the confusion matrix
+
 
