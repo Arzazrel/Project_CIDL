@@ -50,7 +50,7 @@ early_patience = [10,15,20]         # patience for early stopping in the trainin
 result_dict = {}                    # dictionary that contains results for each k-cross validation done
 network = None                      # contain the CNN model, default value is None
 truncate_set = False                # variable which indicates whether the sets (train, test,val) must be truncate or not when divided to batch_size
-model_name = "IfritNet_v3"           # name of the model to test
+model_name = "IfritNet_v4"          # name of the model to test
 
 # ---- dataset variables ----
 classes = []                        # the label associated with each class will be the position that the class name will have in this array

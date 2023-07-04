@@ -25,8 +25,8 @@ corrupt_images = []                             # array that will contain the na
 RGB_mean_dict = {}                              # contain for each class the value for the color Blue , Green, Red. For a quick comparison of the colour distribution in the various classes and dataset.
                                                 # the dictionary will have a key for each class and the corresponding value will be an array of three values.
 # ---- path variables ----
-path_dir_ds = "Dataset\Train_DS"                # folder in which there are the image ds for training
-#path_dir_ds = os.path.join("Immagini_tolte","fire")                # folder in which there are the image ds for training
+path_dir_ds = "Dataset\old_ds\Train_DS"         # folder in which there are the image ds for training (old dataset)
+#path_dir_ds = "Dataset\new_ds\Train_DS"        # folder in which there are the image ds for training (new dataset)
 path_ds = os.path.join(os.pardir,path_dir_ds)   # complete folder to reach the ds -- P.S. For more detail read note 0, please (at the end of the file) 
 list_dir_ds = os.listdir(path_ds)               # list of the folders that are in the DS, one folder for each class
 # ------------------------------------ end: global var ------------------------------------

@@ -3,7 +3,7 @@
 @author: Alessandro Diana
 
 explanation: 
-    program that does the hypertuning for the learning rate in the IfritNet v4 model that achieved the best performance.
+    program that does the hypertuning for the learning rate and dropout in the IfritNet v4 model that achieved the best performance.
 """
 # general
 import random
@@ -24,10 +24,6 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras import Model
 from keras import backend as back
 import keras_tuner as kt
-# for set sklearn
-from sklearn import datasets
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import RocCurveDisplay, confusion_matrix, ConfusionMatrixDisplay
 # for plot
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -46,7 +42,6 @@ img_channel = 3                     # channel of the images in input to CNN
 epochs = 100                        # number of epochs of the training
 batch_size = 128                    # indicate the actual value of batch_size used in training
 early_patience = 15                 # patience for early stopping in the training
-result_dict = {}                    # dictionary that contains results for each k-cross validation done
 hypermodel = None                   # contain the CNN model, default value is None
 
 # ---- dataset variables ----
@@ -60,15 +55,13 @@ val_set_split = 0.2                 # validation set size as a percentage of the
 path_dir_ds = os.path.join("Dataset","new_ds","Train_DS")                       # folder in which there are the image ds for training
 path_ds = os.path.join(os.pardir,path_dir_ds)                                   # complete folder to reach the ds -- P.S. For more detail read note 0, please (at the end of the file) 
 list_dir_ds = os.listdir(path_ds)                                               # list of the folders that are in the DS, one folder for each class
-path_dir_model = "Model"                        # folder in which there are saved the CNN model
-path_check_point_model = os.path.join(os.pardir,path_dir_model,"train_hdf5")  # folder in which there are saved the checkpoint for the model training
-log_dir = os.path.join(path_check_point_model,"logs")
+path_dir_model = "Model"                                                        # folder in which there are saved the CNN model
+path_check_point_model = os.path.join(os.pardir,path_dir_model,"train_hdf5")    # folder in which there are saved the checkpoint for the model training
+log_dir = os.path.join(path_check_point_model,"logs")                           # folder in which there are saved the logs of hypertuning
 # ------------------------------------ end: global var ------------------------------------
 
 # method to check GPU device avaible and setting
 def GPU_check():
-    #os.environ['TF_GPU_ALLOCATOR'] = 'cuda_malloc_async'
-    #print(os.getenv('TF_GPU_ALLOCATOR'))
     print(device_lib.list_local_devices())
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     gpus = tf.config.list_physical_devices('GPU')
@@ -217,7 +210,8 @@ def confusion_matrix():
 for folder in list_dir_ds:                      # for each folder in DS
     classes.append(str(folder))                 # update classes
             
-# load the whole dataset
+# load the whole dataset and divide it in two split (change 'seed' to change the division and shuffle of the data)
+# the two sets are already divided into images and labels, the labels are in categorical format
 train_val_data , test_data = keras.utils.image_dataset_from_directory(
                   directory=path_ds,
                   labels= 'inferred',
@@ -231,10 +225,10 @@ train_val_data , test_data = keras.utils.image_dataset_from_directory(
                   image_size=(img_width, img_height) )
 
 # size of the subdivisions of the various sets of the entire dataset, measured in batch size
-batch_train_val_size = len(train_val_data)                              #
-batch_train_size = int( (1 - val_set_split) * batch_train_val_size)
-batch_val_size = batch_train_val_size - batch_train_size
-batch_test_size = len(test_data)
+batch_train_val_size = len(train_val_data)                              # batch size of training and validation set together
+batch_train_size = int( (1 - val_set_split) * batch_train_val_size)     # batch size of training set
+batch_val_size = batch_train_val_size - batch_train_size                # batch size of validation set
+batch_test_size = len(test_data)                                        # batch size of test set
 
 # division of data into sets
 train_data = train_val_data.take(batch_train_size)
@@ -245,7 +239,7 @@ print("Dimension check print of the sets (measured in batch)")
 print("val_train_dimension: ", batch_train_val_size)
 print("Training set dimension: ",batch_train_size, " val set dimension: ", batch_val_size, " test set dimension: ", batch_test_size)        # dimensione in batch
 
-# convert in np.array
+# convert in np iterator
 numpy = test_data.as_numpy_iterator()               # return a numpy iterator
 
 # slide the iterator, this is divided by batch
@@ -261,15 +255,13 @@ for batch in numpy:
     for label in batch[1]:
         test_label.append(label)            # add correlated label to test_label
 
-# convert in np.array
+# convert in np.array (necessary to have the confusion matrix in the format that I made and used)
 test_image = np.array(test_image)
 test_label = np.array(test_label)
 # control data print
 print("test_image",len(test_image), test_image.shape)
 print("test_label",len(test_label), test_label.shape)
 print("Requied memory for images in test set: ",test_image.size * test_image.itemsize / 10**9," GB")
-# preprocessing
-#test_image = test_image.astype('float32') / 255                                         # normalization
 
 """
 # check print of the first batch_size from training and validation set, tha batch size must be divisible by 4
@@ -331,13 +323,13 @@ print(f"The hyperparameter search is complete. \
  
 # Build the model with the optimal hyperparameters and train it on the data 
 hypermodel = tuner.hypermodel.build(best_hps)
-history = hypermodel.fit(train_data, epochs=epochs, validation_data=val_data, callbacks=[checkpoint, eStop])
+history = hypermodel.fit(train_data, epochs=epochs, validation_data=val_data, callbacks=[checkpoint, eStop])    # fit the model
 
-plot_fit_result(history.history,0)                  # visualize the value for the fit - history.history is a dictionary - call method for plot train result
+plot_fit_result(history.history,0)                              # visualize the value for the fit - history.history is a dictionary - call method for plot train result
 
-test_loss, test_acc = hypermodel.evaluate(test_data)
-dict_metrics = {'loss': test_loss, 'accuracy': test_acc}                            # create a dictionary contain the metrics
-plot_fit_result(dict_metrics,1)      
+test_loss, test_acc = hypermodel.evaluate(test_data)            # evaluate the model with test data
+dict_metrics = {'loss': test_loss, 'accuracy': test_acc}        # create a dictionary contain the metrics
+plot_fit_result(dict_metrics,1)
 print("[test loss, test accuracy]:", test_loss, test_acc)
 
 confusion_matrix()                                  # call method to obtain the confusion matrix
