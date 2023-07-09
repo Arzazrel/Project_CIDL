@@ -1,0 +1,12 @@
+Epoch 49/100
+19/19 [==============================] - ETA: 0s - loss: 0.0546 - accuracy: 0.9790
+Epoch 49: val_accuracy improved from 0.98428 to 0.98899, saving model to /content/drive/MyDrive/Model/train_hdf5/check_I4_acc.hdf5
+19/19 [==============================] - 31s 1s/step - loss: 0.0546 - accuracy: 0.9790 - val_loss: 0.0324 - val_accuracy: 0.9890
+Epoch 64/100
+19/19 [==============================] - ETA: 0s - loss: 0.0581 - accuracy: 0.9811
+Epoch 64: val_accuracy did not improve from 0.98899
+Restoring model weights from the end of the best epoch: 49.
+19/19 [==============================] - 31s 1s/step - loss: 0.0581 - accuracy: 0.9811 - val_loss: 0.0416 - val_accuracy: 0.9858
+Epoch 64: early stopping
+
+[test loss, test accuracy]: 0.07599727809429169 0.979139506816864

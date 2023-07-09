@@ -248,6 +248,53 @@ def make_model():
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
         
+    # GoogLeNet
+    elif model_name == "GoogLeNet":
+        inp = layers.Input(shape=(img_width, img_height, img_channel))       # input
+
+        # seq_0: is the first part of the CNN network starting with the input and ending with the first auxiliary classifier
+        seq_0 = layers.Conv2D(64, 7, strides=2, padding='same', activation='relu')(inp)
+        seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
+        seq_0 = layers.Conv2D(64, 1, strides=1, padding='same', activation='relu')(seq_0)
+        seq_0 = layers.Conv2D(192, 3, strides=1, padding='same', activation='relu')(seq_0)
+        seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
+        seq_0 = inception_mod(seq_0, fil_1x1=64, fil_1x1_3x3=96, fil_3x3=128, fil_1x1_5x5=16, fil_5x5=32, fil_m_pool=32)
+        seq_0 = inception_mod(seq_0, fil_1x1=128, fil_1x1_3x3=128, fil_3x3=192, fil_1x1_5x5=32, fil_5x5=96, fil_m_pool=64)
+        seq_0 = layers.MaxPooling2D(3, strides=2)(seq_0)
+        seq_0 = inception_mod(seq_0, fil_1x1=192, fil_1x1_3x3=96, fil_3x3=208, fil_1x1_5x5=16, fil_5x5=48, fil_m_pool=64)
+
+        # first auxiliary classifier
+        aux_1 = layers.AveragePooling2D((5, 5), strides=3)(seq_0)
+        aux_1 = layers.Conv2D(128, 1, padding='same', activation='relu')(aux_1)
+        aux_1 = layers.Flatten()(aux_1)
+        aux_1 = layers.Dense(1024, activation='relu')(aux_1)
+        aux_1 = layers.Dropout(0.7)(aux_1)
+        aux_1 = layers.Dense(2, activation='softmax',name = "aux_1")(aux_1)         # aux output layer
+
+        # seq_1: is the second part of the CNN network starting with the end of seq_0 and ending with the second auxiliary classifier
+        seq_1 = inception_mod(seq_0, fil_1x1=160, fil_1x1_3x3=112, fil_3x3=224, fil_1x1_5x5=24, fil_5x5=64, fil_m_pool=64)
+        seq_1 = inception_mod(seq_1, fil_1x1=128, fil_1x1_3x3=128, fil_3x3=256, fil_1x1_5x5=24, fil_5x5=64, fil_m_pool=64)
+        seq_1 = inception_mod(seq_1, fil_1x1=112, fil_1x1_3x3=144, fil_3x3=288, fil_1x1_5x5=32, fil_5x5=64, fil_m_pool=64)
+
+        # second auxiliary classifier
+        aux_2 = layers.AveragePooling2D((5, 5), strides=3)(seq_1)
+        aux_2 = layers.Conv2D(128, 1, padding='same', activation='relu')(aux_2)
+        aux_2 = layers.Flatten()(aux_2)
+        aux_2 = layers.Dense(1024, activation='relu')(aux_2)
+        aux_2 = layers.Dropout(0.7)(aux_2) 
+        aux_2 = layers.Dense(2, activation='softmax',name = "aux_2")(aux_2)         # aux output layer
+
+        # seq_2: is the last part of the CNN network starting with the end of seq_1 and ending with the end of CNN
+        seq_2 = inception_mod(seq_1, fil_1x1=256, fil_1x1_3x3=160, fil_3x3=320, fil_1x1_5x5=32, fil_5x5=128, fil_m_pool=128)
+        seq_2 = layers.MaxPooling2D(3, strides=2)(seq_2)
+        seq_2 = inception_mod(seq_2, fil_1x1=256, fil_1x1_3x3=160, fil_3x3=320, fil_1x1_5x5=32, fil_5x5=128, fil_m_pool=128)
+        seq_2 = inception_mod(seq_2, fil_1x1=384, fil_1x1_3x3=192, fil_3x3=384, fil_1x1_5x5=48, fil_5x5=128, fil_m_pool=128)
+        seq_2 = layers.GlobalAveragePooling2D()(seq_2)
+        seq_2 = layers.Dropout(0.4)(seq_2)
+        out = layers.Dense(2, activation='softmax',name = "out")(seq_2)           # output layer
+
+        model = Model(inputs = inp, outputs = [out, aux_1, aux_2])             # assign the CNN in model
+    
     return network
     
 # method to check GPU device avaible and setting
@@ -447,6 +494,12 @@ lunghezza = len(total_image_ds)                                                 
 image_ds = total_image_ds.reshape((lunghezza, img_width, img_height, img_channel))  # resize
 total_image_ds = image_ds.astype('float32') / 255                                   # normalization
 total_labels_ds = to_categorical(total_labels_ds,num_classes=len(classes))          # transform label in categorical format
+
+# clear unused variables to free memory
+del data       
+del img 
+del label    
+del image_ds           
 
 # -------- cross validation --------
 folder_dim = len(total_image_ds) // k               # number of sample in each folder of the k-cross validation

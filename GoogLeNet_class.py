@@ -103,9 +103,9 @@ class GoogLeNet:
     # method for compile the model
     def compile_model(self):
         self.model.compile(optimizer='adam', 
-              loss=[losses.sparse_categorical_crossentropy,
-                    losses.sparse_categorical_crossentropy,
-                    losses.sparse_categorical_crossentropy],
+              loss=[losses.categorical_crossentropy,
+                    losses.categorical_crossentropy,
+                    losses.categorical_crossentropy],
               loss_weights=[1, 0.3, 0.3],
               metrics=['accuracy'])
 
@@ -133,13 +133,13 @@ class GoogLeNet:
 
         t_lab = tf.data.Dataset.from_generator(self.gen_train_labels, 
                                                  output_signature=(tf.TensorSpec(shape=(self.batch_size, self.num_classes), dtype=tf.float32)))
-        
+        """
         t_train = tf.data.Dataset.from_generator(self.train_generator, 
                                                  output_signature=(tf.TensorSpec(shape=(self.batch_size ,self.img_width , self.img_height , self.img_channel), dtype=tf.float32),
                                                                    (tf.TensorSpec(shape=(self.batch_size, self.num_classes), dtype=tf.float32),
                                                                     tf.TensorSpec(shape=(self.batch_size, self.num_classes), dtype=tf.float32),
                                                                     tf.TensorSpec(shape=(self.batch_size, self.num_classes), dtype=tf.float32))))
-
+        """
         t_train_1 = tf.data.Dataset.from_generator(self.train_generator, 
                                                  output_signature=(tf.TensorSpec(shape=(self.batch_size ,self.img_width , self.img_height , self.img_channel), dtype=tf.float32),
                                                                    tf.TensorSpec(shape=(3,self.batch_size,self.num_classes), dtype=tf.int32)))
@@ -150,7 +150,7 @@ class GoogLeNet:
                                                  output_signature=(tf.TensorSpec(shape=(self.batch_size ,self.img_width , self.img_height , self.img_channel), dtype=tf.float32),
                                                                    tf.TensorSpec(shape=(32, 3,), dtype=tf.float32)))
         """
-        
+        """
         # load the whole dataset
         train_val_data , test_data = keras.utils.image_dataset_from_directory(
                           directory=path_ds,
@@ -163,6 +163,7 @@ class GoogLeNet:
                           seed=777,
                           shuffle=True,
                           image_size=(img_width, img_height) )
+        """
         
         
         #v_img = self.gen_val_image()
@@ -170,10 +171,10 @@ class GoogLeNet:
         #mult_v_lab = np.array([self.train_labels,self.train_labels,self.train_labels])
         #print("Shape di una labels: ", v_lab.shape, "Shape di multi labels: ", mult_v_lab.shape)
         # fit the model
-        history = self.model.fit(train_val_data, batch_size=self.batch_size, epochs=epoch)
+        #history = self.model.fit(train_val_data, batch_size=self.batch_size, epochs=epoch)
         #history = self.model.fit((t_img, t_lab), batch_size=self.batch_size, epochs=epoch)
         #history = self.model.fit((t_img, [t_lab,t_lab,t_lab]), epochs=epoch)
-        #history = self.model.fit(t_train, batch_size=self.batch_size, epochs=epoch)
+        history = self.model.fit(t_train, batch_size=self.batch_size, epochs=epoch)
         #history = self.model.fit(t_train_1, batch_size=self.batch_size, epochs=epoch)
         #history = self.model.fit(t_train_2, batch_size=self.batch_size, epochs=epoch)
         #history = self.model.fit(self.train_image,(self.train_labels,self.train_labels,self.train_labels), batch_size=self.batch_size, epochs=epoch)
@@ -424,10 +425,10 @@ class GoogLeNet:
     # ------------------------------------ end: generator ds methods ------------------------------------
 
 
-GNet_Model = GoogLeNet(2)    # create an instance of the IfriNet class
-GNet_Model.make_model()  
-GNet_Model.compile_model()
-GNet_Model.fit_model(10)
+#GNet_Model = GoogLeNet(2)    # create an instance of the IfriNet class
+#GNet_Model.make_model()  
+#GNet_Model.compile_model()
+#GNet_Model.fit_model(10)
 
 """
 brief description:
