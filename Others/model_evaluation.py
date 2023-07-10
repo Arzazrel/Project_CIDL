@@ -16,6 +16,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import models
+from tensorflow.keras import losses
 from tensorflow.keras import layers
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model
@@ -26,7 +27,6 @@ from keras import backend as back
 # for set sklearn
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import RocCurveDisplay, confusion_matrix, ConfusionMatrixDisplay
 # for plot
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -50,7 +50,8 @@ early_patience = [10,15,20]         # patience for early stopping in the trainin
 result_dict = {}                    # dictionary that contains results for each k-cross validation done
 network = None                      # contain the CNN model, default value is None
 truncate_set = False                # variable which indicates whether the sets (train, test,val) must be truncate or not when divided to batch_size
-model_name = "IfritNet_v4"          # name of the model to test
+model_name = "GoogLeNet"            # name of the model to test
+is_googLeNet = False                # indicate if the cross validation is performed on GoogLeNet model
 
 # ---- dataset variables ----
 classes = []                        # the label associated with each class will be the position that the class name will have in this array
@@ -293,8 +294,15 @@ def make_model():
         seq_2 = layers.Dropout(0.4)(seq_2)
         out = layers.Dense(2, activation='softmax',name = "out")(seq_2)           # output layer
 
-        model = Model(inputs = inp, outputs = [out, aux_1, aux_2])             # assign the CNN in model
+        network = Model(inputs = inp, outputs = [out, aux_1, aux_2])             # assign the CNN in model
     
+        network.compile(optimizer='adam', 
+              loss=[losses.categorical_crossentropy,
+                    losses.categorical_crossentropy,
+                    losses.categorical_crossentropy],
+              loss_weights=[1, 0.3, 0.3],
+              metrics=['accuracy'])
+        
     return network
     
 # method to check GPU device avaible and setting
@@ -349,7 +357,7 @@ def generator_train():
             label_rest_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
 
         if len(img_tensor) == batch_size:                       # check to see if batch is full (reached batch_size)
-            yield img_tensor, label_tensor                      # return the batch
+            yield img_tensor, label_tensor                                  # return the batch
             # clean list
             img_tensor.clear()
             label_tensor.clear()
@@ -363,7 +371,7 @@ def generator_train():
                     img_tensor.append(img_rest_tensor[i])
                     label_tensor.append(label_rest_tensor[i])
                 #print("Generator training set, arrivato a posizione: ",idx)
-                yield img_tensor, label_tensor                  # return the last batch
+                yield img_tensor, label_tensor                                  # return the batch                                 # return the batch
 
 # define generator function to do the validation set
 def generator_val():
@@ -393,7 +401,7 @@ def generator_val():
             label_rest_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
 
         if len(img_tensor) == batch_size:                       # check to see if batch is full (reached batch_size)
-            yield img_tensor, label_tensor                      # return the batch
+            yield img_tensor, label_tensor                                  # return the batch
             # clean list
             img_tensor.clear()
             label_tensor.clear()
@@ -404,7 +412,7 @@ def generator_val():
                 for i in range(rest):
                     img_tensor.append(img_rest_tensor[i])
                     label_tensor.append(label_rest_tensor[i])
-                yield img_tensor, label_tensor                  # return the last batch
+                yield img_tensor, label_tensor                                  # return the batch
         
 # define generator function to do the test set
 def generator_test():
@@ -435,7 +443,7 @@ def generator_test():
             label_rest_tensor.append(tf.convert_to_tensor(label, dtype=tf.float32))
 
         if len(img_tensor) == batch_size:                       # check to see if batch is full (reached batch_size)
-            yield img_tensor, label_tensor                      # return the batch
+            yield img_tensor, label_tensor                                  # return the batch
             # clean list
             img_tensor.clear()
             label_tensor.clear()
@@ -446,7 +454,7 @@ def generator_test():
                 for i in range(rest):
                     img_tensor.append(img_rest_tensor[i])
                     label_tensor.append(label_rest_tensor[i])
-                yield img_tensor, label_tensor                  # return the last batch
+                yield img_tensor, label_tensor                                  # return the batch
 
 # ------------------------------------ end: generetor function ------------------------------------
 
@@ -506,6 +514,11 @@ folder_dim = len(total_image_ds) // k               # number of sample in each f
 print ("folder dim: ", folder_dim)
 
 start_time = time.time()                            # start time for training
+if model_name == "GoogLeNet":                       # check if is GoogLeNet model
+    is_googLeNet = True                             # set up status variables
+else:
+    is_googLeNet = False                            # reset status variables
+print("is_googlenet è ",is_googLeNet)
 # slide along each pairs of parameters and does k-cross validation for each one of them
 for batch in batch_size_list:       # slide the batch_size values
     batch_size = batch                  # update the actual 
@@ -513,8 +526,18 @@ for batch in batch_size_list:       # slide the batch_size values
         # define the dictionary that will contain the results of the k-cross validation training
         name = "b"+str(batch)+"_e"+str(early)       # create the name for this combination of values parameters
         result_dict[name] = {}                      # define 
-        result_dict[name]['loss'] = []              # define list of loss
-        result_dict[name]['acc'] = []               # define list of accuracy
+        # check if the model is GoogLeNet or not
+        if model_name == "GoogLeNet":
+            result_dict[name]['gen_loss'] = []          # define list of gen_loss
+            result_dict[name]['out_loss'] = []          # define list of out_loss
+            result_dict[name]['aux1_loss'] = []         # define list of aux1_loss
+            result_dict[name]['aux2_loss'] = []         # define list of aux2_loss
+            result_dict[name]['out_acc'] = []           # define list of out accuracy
+            result_dict[name]['aux1_acc'] = []          # define list of aux1 accuracy
+            result_dict[name]['aux2_acc'] = []          # define list of aux2 accuracy
+        else:
+            result_dict[name]['loss'] = []              # define list of loss
+            result_dict[name]['acc'] = []               # define list of accuracy
         
         for fold in range(k):               # do cross validation
             print("Pair: batch_size = ", batch," ,patience = ",early, " cicle ",fold," of ",k)
@@ -539,33 +562,58 @@ for batch in batch_size_list:       # slide the batch_size values
             
             # create TRAIN SET using generator function and specifying shapes and dtypes
             train_set = tf.data.Dataset.from_generator(generator_train, 
-                                                     output_signature=(tf.TensorSpec(shape=(batch ,img_width , img_height , img_channel), dtype=tf.float32),
-                                                                       tf.TensorSpec(shape=(batch, len(classes)), dtype=tf.float32)))
-            
+                                                         output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
+                                                                           tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
+            print("lunghezza train_set:",train_set.element_spec)
+                
             # create VALIDATION SET using generator function and specifying shapes and dtypes
             val_set = tf.data.Dataset.from_generator(generator_val, 
-                                                     output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
-                                                                       tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
+                                                         output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
+                                                                           tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
             # create TEST SET using generator function and specifying shapes and dtypes
             test_set = tf.data.Dataset.from_generator(generator_test, 
-                                                     output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
-                                                                       tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
+                                                         output_signature=(tf.TensorSpec(shape=(batch_size ,img_width , img_height , img_channel), dtype=tf.float32),
+                                                                           tf.TensorSpec(shape=(batch_size, len(classes)), dtype=tf.float32)))
             
             # train model
             history = network.fit(train_set,validation_data=val_set, epochs=epochs, callbacks = [checkpoint, eStop])     # fit model
             # evaluate
-            loss_score , acc_score = network.evaluate(test_image, test_label)                      # obtain loss and accuracy metrics
-            # save evaluate result
-            result_dict[name]['loss'].append(loss_score)   
-            result_dict[name]['acc'].append(acc_score) 
-            
-            del loss_score                      # clear to free memory
-            del acc_score                       # clear to free memory
+            # check if the model is GoogLeNet or not
+            if model_name == "GoogLeNet":
+                gen_loss , out_loss, aux1_loss, aux2_loss, out_acc, aux1_acc, aux2_acc = network.evaluate(test_image, test_label)                      # obtain loss and accuracy metrics
+                # save evaluate result
+                result_dict[name]['gen_loss'].append(gen_loss)   
+                result_dict[name]['out_loss'].append(out_loss) 
+                result_dict[name]['aux1_loss'].append(aux1_loss) 
+                result_dict[name]['aux2_loss'].append(aux2_loss) 
+                result_dict[name]['out_acc'].append(out_acc) 
+                result_dict[name]['aux1_acc'].append(aux1_acc) 
+                result_dict[name]['aux2_acc'].append(aux2_acc) 
+                
+                del gen_loss                        # clear to free memory
+                del out_loss                        # clear to free memory
+                del aux1_loss                       # clear to free memory
+                del aux2_loss                       # clear to free memory
+                del out_acc                         # clear to free memory
+                del aux1_acc                        # clear to free memory
+                del aux2_acc                        # clear to free memory
+            else:
+                loss_score , acc_score = network.evaluate(test_image, test_label)                      # obtain loss and accuracy metrics
+                # save evaluate result
+                result_dict[name]['loss'].append(loss_score)   
+                result_dict[name]['acc'].append(acc_score) 
+                
+                del loss_score                      # clear to free memory
+                del acc_score                       # clear to free memory
             
             # create the confusion matrix, rows indicate the real class and columns indicate the predicted class 
             conf_matrix = np.zeros((len(classes),len(classes)))     # at begin values are 0
-            
-            predictions = network.predict(test_image)               # get the output for each sample of the test set
+            # check if the model is GoogLeNet or not
+            if model_name == "GoogLeNet":
+                predictions = network.predict(test_image)               # get the output for each sample of the test set
+                predictions = predictions[0]                            # get only the output of out (the main, nothing from auxiliary)
+            else:
+                predictions = network.predict(test_image)               # get the output for each sample of the test set
             # slide the prediction result and go to create the confusion matrix
             for i in range(len(test_image)):
                 # test_label[i] indicate the real value of the label associated at the test_image[i] -> is real class (row)
@@ -609,11 +657,25 @@ for batch in batch_size_list:       # slide the batch_size values
             val_label = None
             del predictions                                 # clear to free memory
             del network                                     # clear to free memory
-            
-        # print of the mean of result of the last k-cross validation done
-        loss_scores = np.average(result_dict[name]['loss'])
-        acc_scores = np.average(result_dict[name]['acc'])
-        print("\n\nK-cross validation of the ", name ,"\nLoss mean :" ,loss_scores,"\nAccuracy mean : ",acc_scores ,"\n")
+           
+        # check if the model is GoogLeNet or not
+        if model_name == "GoogLeNet":
+            # print of the mean of result of the last k-cross validation done
+            gen_loss = np.average(result_dict[name]['gen_loss'])
+            out_loss = np.average(result_dict[name]['out_loss'])
+            aux1_loss = np.average(result_dict[name]['aux1_loss'])
+            aux2_loss = np.average(result_dict[name]['aux2_loss'])
+            out_acc = np.average(result_dict[name]['out_acc'])
+            aux1_acc = np.average(result_dict[name]['aux1_acc'])
+            aux2_acc = np.average(result_dict[name]['aux2_acc'])
+            print("\n\nK-cross validation of the ", name ,"\nGen_loss mean :" ,gen_loss,"\out_loss mean : ",out_loss ,
+                  "\naux1_loss mean : ", aux1_loss, "\naux2_loss mean : ",aux2_loss,
+                  "\nout_acc mean : ",out_acc,"\naux1_acc mean : ",aux1_acc,"\naux2_acc mean : ",aux2_acc)
+        else:
+            # print of the mean of result of the last k-cross validation done
+            loss_scores = np.average(result_dict[name]['loss'])
+            acc_scores = np.average(result_dict[name]['acc'])
+            print("\n\nK-cross validation of the ", name ,"\nLoss mean :" ,loss_scores,"\nAccuracy mean : ",acc_scores ,"\n")
             
         # plot the confusion matrix
         rows = classes                                          # contain the label of the classes showed in the rowvalues of rows          
@@ -644,34 +706,99 @@ for batch in batch_size_list:       # slide the batch_size values
 # -- make accuracy and loss mean value for each parameters pair
 # this 3 list of the result to show have the same order
 list_pair_param = list(result_dict.keys())                      # lsit containing all pairs of the parameters tested
+# list for the case of networks that aren't GoogLeNet
 list_acc = []                                                   # contain the mean value of the accuracy for each pairs of the parameters tested
 list_loss = []                                                  # contain the mean value of the loss for each pairs of the parameters tested
+# list for the case of network that is GoogLeNet
+list_out_acc = []                                               # contain the mean value of the out accuracy for each pairs of the parameters tested
+list_aux1_acc = []                                               # contain the mean value of the out accuracy for each pairs of the parameters tested
+list_aux2_acc = []                                               # contain the mean value of the out accuracy for each pairs of the parameters tested
+list_gen_loss = []                                              # contain the mean value of the gen_loss for each pairs of the parameters tested
+list_out_loss = []                                              # contain the mean value of the out_loss for each pairs of the parameters tested
+list_aux1_loss = []                                             # contain the mean value of the aux1_loss for each pairs of the parameters tested
+list_aux2_loss = []                                             # contain the mean value of the aux2_loss for each pairs of the parameters tested
 
 # do the mean value for loss and accuracy per each pairs of parameters tested
-for pair in list_pair_param:
-    print("Before the mean\nresult of" + pair + " :" ,result_dict[pair]['loss'] , " : ",result_dict[pair]['acc'])
-    # validation score: average of the validation scores of the k folds
-    loss_scores = np.average(result_dict[pair]['loss'])
-    acc_scores = np.average(result_dict[pair]['acc'])
-    print("After the mean\nresult of" + pair + " :" ,loss_scores," : ",acc_scores)
-    list_acc.append(acc_scores)                                                
-    list_loss.append(loss_scores)
-    
-# -- plot accuracy results
-fig = plt.figure()
-plt.plot(list_pair_param,list_acc ,'o-b')
-plt.title(model_name)                       # plot title
-plt.xlabel("Parameters")                    # x axis title
-plt.ylabel("Accuracy")                      # y axis title
-plt.show()                                  # show accuracy plot
+# check if the model is GoogLeNet or not
+if model_name == "GoogLeNet":
+    for pair in list_pair_param:
+        print("Before the mean\nresult of " + pair + " :" ,
+                  "\nGen_loss:" ,result_dict[pair]['gen_loss'],
+                  "\nOut_loss : ",result_dict[pair]['out_loss'] ,
+                  "\nAux1_loss : ", result_dict[pair]['aux1_loss'],
+                  "\nAux2_loss : ",result_dict[pair]['aux2_loss'],
+                  "\nOut_acc : ",result_dict[pair]['out_acc'],
+                  "\nAux1_acc : ",result_dict[pair]['aux1_acc'],
+                  "\nAux2_acc mean : ",result_dict[pair]['aux2_acc'])
+        # validation score: average of the validation scores of the k folds
+        gen_loss = np.average(result_dict[pair]['gen_loss'])
+        out_loss = np.average(result_dict[pair]['out_loss'])
+        aux1_loss = np.average(result_dict[pair]['aux1_loss'])
+        aux2_loss = np.average(result_dict[pair]['aux2_loss'])
+        out_acc = np.average(result_dict[pair]['out_acc'])
+        aux1_acc = np.average(result_dict[pair]['aux1_acc'])
+        aux2_acc = np.average(result_dict[pair]['aux2_acc'])
+        print("\nAfter the mean\nresult of ", pair ,"\nGen_loss mean :" ,gen_loss,"\nOut_loss mean : ",out_loss ,
+                            "\nAux1_loss mean : ", aux1_loss, "\nAux2_loss mean : ",aux2_loss,
+                            "\nOut_acc mean : ",out_acc,"\nAux1_acc mean : ",aux1_acc,"\nAux2_acc mean : ",aux2_acc)
+        # append the mean of results to the lists to plot
+        list_out_acc.append(out_acc)
+        list_aux1_acc.append(aux1_acc)
+        list_aux2_acc.append(aux2_acc)
+        list_gen_loss.append(gen_loss)
+        list_out_loss.append(out_loss)
+        list_aux1_loss.append(aux1_loss)
+        list_aux2_loss.append(aux2_loss)
 
-# -- plot loss results
-fig = plt.figure()
-plt.plot(list_pair_param,list_loss ,'o-b')
-plt.title(model_name)                       # plot title
-plt.xlabel("Parameters")                    # x axis title
-plt.ylabel("Loss")                          # y axis title
-plt.show()                                  # show loss plot
+    # -- plot accuracy results
+    fig = plt.figure()
+    plt.plot(list_pair_param,list_out_acc ,'o--', color="black" , label = 'out')     # accuracy of out
+    plt.plot(list_pair_param,list_aux1_acc,'o-g', label = 'aux1')   # accuracy of aux1
+    plt.plot(list_pair_param,list_aux2_acc,'o-b', label = 'aux2')   # accuracy of aux2
+    plt.title(model_name)                       # plot title
+    plt.xlabel("Parameters")                    # x axis title
+    plt.ylabel("Accuracy")                      # y axis title
+    plt.legend(loc='lower center')             # show the legend for the plot
+    plt.show()                                  # show accuracy plot
+
+    # -- plot loss results
+    fig = plt.figure()
+    plt.plot(list_pair_param,list_gen_loss ,'o-',color="black" ,label = 'gen')     # general loss
+    plt.plot(list_pair_param,list_out_loss ,'o--r',label = 'out')     # loss of out
+    plt.plot(list_pair_param,list_aux1_loss,'o--g', label = 'aux1')   # loss of aux1
+    plt.plot(list_pair_param,list_aux2_loss,'o--b', label = 'aux2')   # loss of aux2
+    plt.title(model_name)                       # plot title
+    plt.xlabel("Parameters")                    # x axis title
+    plt.ylabel("Loss")                          # y axis title
+    plt.legend(loc='upper center')              # show the legend for the plot
+    plt.show()                                  # show loss plot
+
+else:
+    for pair in list_pair_param:
+        print("Before the mean\nresult of " + pair + " :" ,result_dict[pair]['loss'] , " : ",result_dict[pair]['acc'])
+        # validation score: average of the validation scores of the k folds
+        loss_scores = np.average(result_dict[pair]['loss'])
+        acc_scores = np.average(result_dict[pair]['acc'])
+        print("After the mean\nresult of " + pair + " :" ,loss_scores," : ",acc_scores)
+        # append the mean of results to the lists to plot
+        list_acc.append(acc_scores)
+        list_loss.append(loss_scores)
+
+    # -- plot accuracy results
+    fig = plt.figure()
+    plt.plot(list_pair_param,list_acc ,'o-b')
+    plt.title(model_name)                       # plot title
+    plt.xlabel("Parameters")                    # x axis title
+    plt.ylabel("Accuracy")                      # y axis title
+    plt.show()                                  # show accuracy plot
+
+    # -- plot loss results
+    fig = plt.figure()
+    plt.plot(list_pair_param,list_loss ,'o-b')
+    plt.title(model_name)                       # plot title
+    plt.xlabel("Parameters")                    # x axis title
+    plt.ylabel("Loss")                          # y axis title
+    plt.show()                                  # show loss plot
 
 end_time = time.time()                              # end time for training
 print(f"Time to all cross validation of the model: {(end_time - start_time) // 60} (m)")  # print time to all cross validation of the model
