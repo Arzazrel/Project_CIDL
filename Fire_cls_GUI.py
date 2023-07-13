@@ -749,8 +749,6 @@ def make_fit_model(chosen_model,number_epoch,num_batch_size,num_early_patience):
             GLNet_Model = GLNet.GoogLeNet(len(classes))     # create an instance of the AlexNet class
             GLNet_Model.make_model()                        # make model (GoogLeNet architecture)
             GLNet_Model.compile_model()                     # compile model
-            GLNet_Model.take_ds( train_image, train_label , val_img,val_label ,truncate_set,batch_size)
-            GLNet_Model.fit_model(epochs)
             network = GLNet_Model.return_model()            # return model
             return
         elif chosen_model == "Ifrit_1":                    

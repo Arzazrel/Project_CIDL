@@ -1,0 +1,14 @@
+Epoch 32: val_loss did not improve from 0.08502
+Restoring model weights from the end of the best epoch: 12.
+39/39 [==============================] - 13s 320ms/step - loss: 0.0736 - out_loss: 0.0462 - aux_1_loss: 0.0476 - aux_2_loss: 0.0438 - out_accuracy: 0.9828 - aux_1_accuracy: 0.9820 - aux_2_accuracy: 0.9832 - val_loss: 0.1086 - val_out_loss: 0.0686 - val_aux_1_loss: 0.0677 - val_aux_2_loss: 0.0654 - val_out_accuracy: 0.9844 - val_aux_1_accuracy: 0.9781 - val_aux_2_accuracy: 0.9844
+Epoch 32: early stopping
+Time for training the model: 574.6872506141663 (s)
+
+Result of the evaluation with the test set:
+Total loss:  0.1745941936969757 
+Out loss:  0.10898640006780624 
+Aux1 loss:  0.10968031734228134 
+Aux2 loss:  0.10901232063770294 
+Out accuracy:  0.9647979140281677 
+Aux1 accuracy:  0.9700130224227905 
+Aux2 accuracy:  0.9634941220283508
