@@ -1,8 +1,10 @@
-Folder of the Ifrit application, an AI application that implement a CNN model built in Python for the Computational Intelligence and Deep Learning project at the University of Pisa.
-The task to be performed by the network and addressed in the project is forest fire detection.
+DESCRIPTION
+	Folder of the Ifrit application, an AI application that implement a CNN model built in Python for the Computational Intelligence and Deep Learning project at the University of Pisa.
+	The task to be performed by the network and addressed in the project is forest fire detection.
 
-The dataset used for the application can be found on kaggle at the following link: 
-https://www.kaggle.com/datasets/mohnishsaiprasad/forest-fire-images
+DATASET
+	The dataset used for the application can be found on kaggle at the following link: 
+	https://www.kaggle.com/datasets/mohnishsaiprasad/forest-fire-images
 
 The folder contains:
  - 3 python files: Fire_cls_GUI (main file, GUI), AlexNet_class, GoogLeNet class, IfritNet class (my own CNN)
@@ -20,3 +22,6 @@ The folder contains:
 Developer's notes
 	The work related to the university examination has been done and the project is completed. 
 	There may be updates or improvements to the project in the future, but nothing is planned for now.
+
+Developers:
+	- Alessandro Diana
